@@ -60,7 +60,7 @@ ColorMask = create_primitive(
     )
 
 VFlip = create_primitive(
-    name = 'Mul',
+    name = 'VFlip',
     input_type = ['Grid'],
     output_type = ['Grid'],
     param_type = [],
@@ -68,7 +68,7 @@ VFlip = create_primitive(
     )
 
 HFlip = create_primitive(
-    name = 'Mul',
+    name = 'HFlip',
     input_type = ['Grid'],
     output_type = ['Grid'],
     param_type = [],

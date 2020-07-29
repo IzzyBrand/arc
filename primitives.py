@@ -55,24 +55,8 @@ ColorMask = create_primitive(
     name = 'ColorMask',
     input_type = ['Grid'],
     output_type = ['Grid'],
-    param_type = ['Int'],
+    param_type = ['Color'],
     func = color_mask_func
-    )
-
-Add = create_primitive(
-    name = 'Add',
-    input_type = ['Int', 'Int'],
-    output_type = ['Int'],
-    param_type = [],
-    func = np.add
-    )
-
-Mul = create_primitive(
-    name = 'Mul',
-    input_type = ['Int', 'Int'],
-    output_type = ['Int'],
-    param_type = [],
-    func = np.multiply
     )
 
 VFlip = create_primitive(
@@ -90,3 +74,21 @@ HFlip = create_primitive(
     param_type = [],
     func = lambda x: np.flip(x, axis=1)
     )
+
+# TODO(izzy): so far i'm only working with programs that operate on
+# grids. Soon I'll need to add more general primitives tho...
+# Add = create_primitive(
+#     name = 'Add',
+#     input_type = ['Int', 'Int'],
+#     output_type = ['Int'],
+#     param_type = [],
+#     func = np.add
+#     )
+
+# Mul = create_primitive(
+#     name = 'Mul',
+#     input_type = ['Int', 'Int'],
+#     output_type = ['Int'],
+#     param_type = [],
+#     func = np.multiply
+#     )

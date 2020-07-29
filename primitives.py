@@ -24,7 +24,8 @@ def create_primitive(name, input_type, output_type, param_type,
             "output_type": output_type,
             "param_type": param_type,
             "__init__": init_func,
-            "__call__": func
+            "__call__": func,
+            "__str__": lambda _: name
         })
     language.append(new_primitive)
     return(new_primitive)
@@ -36,7 +37,13 @@ def create_primitive(name, input_type, output_type, param_type,
 # pull a patch out from a grid at the specified coordinates
 def patch_extract_func(self, input_grid):
     x, y, w, h = self.params
-    return input_grid[y:y+h, x:x+w]
+    # TODO(izzy): at some point we'll have to be smarter about selecting
+    # indices and dimensions. for the minute, we'll just pretend the function
+    # is a no-op if dimensions are invalie
+    try:
+        return input_grid[y:y+h, x:x+w]
+    except IndexError:
+        return grid
 
 PatchExtract = create_primitive(
     name = 'PatchExtract',
@@ -49,7 +56,7 @@ PatchExtract = create_primitive(
 # mask the grid by a set color
 def color_mask_func(self, input_grid):
     c, = self.params
-    return (input_grid == c).astype(int)
+    return input_grid == c
 
 ColorMask = create_primitive(
     name = 'ColorMask',
@@ -64,7 +71,7 @@ VFlip = create_primitive(
     input_type = ['Grid'],
     output_type = ['Grid'],
     param_type = [],
-    func = lambda x: np.flip(x, axis=0)
+    func = lambda _, x: np.flip(x, axis=0)
     )
 
 HFlip = create_primitive(
@@ -72,7 +79,7 @@ HFlip = create_primitive(
     input_type = ['Grid'],
     output_type = ['Grid'],
     param_type = [],
-    func = lambda x: np.flip(x, axis=1)
+    func = lambda _, x: np.flip(x, axis=1)
     )
 
 # TODO(izzy): so far i'm only working with programs that operate on

@@ -8,7 +8,7 @@ from primitives import *
 class SimpleSequentialProgram:
     def __init__(self, primitives):
         self.primitives = primitives
-        assert len(primitives) > 0
+        assert len(primitives) > 0, 'Program must be non-empty (so far)'
         self.type_set()
         self.compiled = False
 
@@ -52,7 +52,12 @@ class SimpleSequentialProgram:
         else:
             return None
 
+    def __str__(self):
+        return '\n'.join([f'{i}: {str(p)}' for i, p in enumerate(self.primitives)])
+
     def __call__(self, x):
+        assert self.compiled, 'Program must be compiled to evaluate'
+        # print(self)
         # execute the program on the given input
         for primitive in self.primitives:
             x = primitive(x)

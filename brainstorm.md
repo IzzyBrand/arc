@@ -1,4 +1,18 @@
-## Types
+# Overview
+
+This is a meta-learning task, so for each instance we are given a few input-output pairs as training data, and then 3 test inputs for which we have to produce the correct output at least once.
+
+The dataset has 400 train tasks, 400 validation tasks, and 200 help out test tasks.
+
+Thoughts
+
+ * Program synthesis is the way to go
+ * we should use all three guesses -> three different "correct" programs (see [Principle of Multiple Explanations](http://guillefix.me/cosmos/static/Principle%2520of%2520multiple%2520explanations.html))
+ * weight programs by correctness, then occams razor (see [Solomanoff Induction](https://en.wikipedia.org/wiki/Solomonoff%27s_theory_of_inductive_inference))
+ * Program synthesis should neurally guided to reduce search time
+ * We should synthesize new primtives using the train dataset (see [Kevin Ellis: "Growing Libraries of Subroutines with Wake/Sleep Bayesian Program Learning"](https://www.youtube.com/watch?v=_oyGF1YqdJc))
+
+### Types
 
  * Grid: 2d array of colors
  * Mask: 2d array of boools
@@ -7,7 +21,7 @@
  * Pos: 2 Ints
  * Set(T): A higher-order container of T
 
-## Primitives to implement
+### Primitives to implement
 
  * **PatchExtract**: Grid, Pos -> Grid
  * **PatchInsert**: Grid, Grid, Pos -> Grid
@@ -18,9 +32,19 @@
  * **MaskAnd**: Mask, Mask -> Mask
  * **MaskOr**: Mask, Mask -> Mask
 
-## Program Synthesis Ideas
+### Program Synthesis Concepts
 
  * Insert one program into another
  	* Have **Identity** be a program and let it implicitly run between every pair
  	of primtives
  	* With **Identity**, this operation could be adding, replacing, or deleting
+
+
+### Features
+In order to accelerate program synthesis, we may want to use neurally guided search (neural network ingests training examples and outputs probability distribution over programs). We may need to learn input features for this netowrk, but we can implement them ourselves fairly easily. Some features that may be worth hardcoding are
+
+ * symmetric input (or near symmetric)
+ * repeated objects
+ * background color detector
+ * colors to ignore
+ * obvious grid shape features (ie. "output always 1x1" or "shape unchanged")

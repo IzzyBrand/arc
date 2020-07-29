@@ -1,3 +1,8 @@
+""" Massachusetts Institute of Technology
+
+Izzy Brand, 2020
+"""
+
 import numpy as np
 
 # a list of all the primitives
@@ -14,6 +19,7 @@ def create_primitive(name, input_type, output_type, param_type,
     func, init_func=default_init):
     new_primitive =  type(name, (),
         {
+            "name": name,
             "input_type": input_type,
             "output_type": output_type,
             "param_type": param_type,
@@ -23,8 +29,11 @@ def create_primitive(name, input_type, output_type, param_type,
     language.append(new_primitive)
     return(new_primitive)
 
+###############################################################################
+# Primitive Definitions
+###############################################################################
 
-# define a primtive to pull out a patch from a grid
+# pull a patch out from a grid at the specified coordinates
 def patch_extract_func(self, input_grid):
     x, y, w, h = self.params
     return input_grid[y:y+h, x:x+w]
@@ -35,6 +44,19 @@ PatchExtract = create_primitive(
     output_type = ['Grid'],
     param_type = ['Int', 'Int', 'Int', 'Int'],
     func = patch_extract_func
+    )
+
+# mask the grid by a set color
+def color_mask_func(self, input_grid):
+    c, = self.params
+    return (input_grid == c).astype(int)
+
+ColorMask = create_primitive(
+    name = 'ColorMask',
+    input_type = ['Grid'],
+    output_type = ['Grid'],
+    param_type = ['Int'],
+    func = color_mask_func
     )
 
 Add = create_primitive(
@@ -51,4 +73,20 @@ Mul = create_primitive(
     output_type = ['Int'],
     param_type = [],
     func = np.multiply
+    )
+
+VFlip = create_primitive(
+    name = 'Mul',
+    input_type = ['Grid'],
+    output_type = ['Grid'],
+    param_type = [],
+    func = lambda x: np.flip(x, axis=0)
+    )
+
+HFlip = create_primitive(
+    name = 'Mul',
+    input_type = ['Grid'],
+    output_type = ['Grid'],
+    param_type = [],
+    func = lambda x: np.flip(x, axis=1)
     )

@@ -7,6 +7,7 @@ from random import choices as sample_with_replacement
 
 from primitives import language
 from programs import SimpleSequentialProgram
+from util import *
 
 def eval(program, train_data):
     num_correct = 0
@@ -17,13 +18,10 @@ def eval(program, train_data):
         target = np.array(t['output'], dtype=int)
         pred = program(grid)
 
-        num_correct += prefect_match(pred, target)
+        num_correct += match(pred, target)
         score += heursitic_score(pred, target)
 
     return num_correct, score
-
-def prefect_match(pred, target):
-    return pred.shape == target.shape and (pred == target).all()
 
 def heursitic_score(pred, target):
     score = 0

@@ -43,6 +43,10 @@ def HFlip(args):
     grid, = args
     return np.flip(grid, axis=1)
 
+def GridEqual(args):
+    grid1, grid2 = args
+    return grid1 == grid2
+
 def ColorMask(args):
     grid, color = args
     return grid == color
@@ -61,11 +65,17 @@ def PatchExtract(args):
     except IndexError:
         return grid
 
+def PatchCreate(args):
+    w, h, color = args
+    return np.ones([h,w]) * color
+
 create_primitive(VFlip, 'Grid', 'Grid')
 create_primitive(HFlip, 'Grid', 'Grid')
+create_primitive(GridEqual, ['Grid', 'Grid'], 'Mask')
 create_primitive(ColorMask, ['Grid', 'Color'], 'Mask')
 create_primitive(ColorCount, ['Grid', 'Color'], 'Int')
 create_primitive(PatchExtract, ['Grid', 'Int', 'Int', 'Int', 'Int'], 'Grid')
+create_primitive(PatchCreate, ['Int', 'Int', 'Color'], 'Grid')
 
 
 if __name__ == '__main__':

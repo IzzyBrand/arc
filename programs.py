@@ -81,6 +81,9 @@ class TreeStructuredProgram:
             self.parent = spec
             self.children = []
 
+        self.output_type = 'Unknown'
+        self.input_type = 'Unknown'
+
     def type_check(self):
         # if this is an empty program, it type checks w/ NoneType
         if self.parent is None:
@@ -114,23 +117,20 @@ class TreeStructuredProgram:
             # input type. And that input type becomes the input type of the
             # entire program
             if children_input_type:
-                if len(set(children_input_type)) == 1:
-                    self.input_type = children_input_type[0]
+                all_children_input_types_equal = True
+                type_0 = children_input_type[0]
+                for type_i in children_input_type:
+                    all_children_input_types_equal &= (type_0 == type_i)
+
+                if all_children_input_types_equal:
+                    self.input_type = type_0
                 else:
-                    print(f'All children must have the same input type. {[c.name for c in self.children]} have different input types.')
+                    print(f'All children must have the same input type. {[str(c) if isinstance(c, TreeStructuredProgram) else c.name for c in self.children]} have different input types.')
                     return False
             else:
                 self.input_type = None
 
             return True
-
-    def __str__(self):
-        if self.parent is None:
-            return 'None'
-        else:
-            args = ', '.join([c.name if hasattr(c, 'name') else str(c) \
-                for c in self.children])
-            return f'{self.parent.name}({args})'
 
     def eval(self, x):
         # if there is no parent operation, then this is the identity
@@ -142,35 +142,60 @@ class TreeStructuredProgram:
         # evaluate the parent operation
         return self.parent.eval(x)
 
+    def __str__(self):
+        if self.parent is None:
+            return 'None'
+        else:
+            if self.children:
+                args = ', '.join([str(c) if isinstance(c, TreeStructuredProgram) \
+                    else c.name for c in self.children])
+                return f'{self.parent.name}({args})'
+            else:
+                if self.parent.input_type is None:
+                    return self.parent.name
+                else:
+                    return f'{self.parent.name}(_)'
+
 
 if __name__ == '__main__':
-    # P = SimpleSequentialProgram([PatchExtract, HFlip])
-    # print(P.get_param_list())
-
-    # param_list = [[0,0,0,0],[]]
-    # P.compile(param_list)
-    # print(P.get_param_list())
-
-    # param_list = [[0,0,1,1],[]]
-    # P.compile(param_list)
-    # print(P.get_param_list())
-
-    # P.decompile()
-    # print(P.get_param_list())
-
     good_spec = (HFlip, (VFlip, VFlip))
     P = TreeStructuredProgram(good_spec)
     print(P)
     print('Type check:', P.type_check())
-    print()
-
-    good_spec = (PatchExtract, HFlip, Int_p(1), Int_p(1), Int_p(1), Int_p(1))
-    P = TreeStructuredProgram(good_spec)
-    print(P)
-    print('Type check:', P.type_check())
+    print(f'{P.input_type} -> {P.output_type}')
     print()
 
     bad_spec = (HFlip, VFlip, VFlip)
     P = TreeStructuredProgram(bad_spec)
     print(P)
     print('Type check:', P.type_check())
+    print(f'{P.input_type} -> {P.output_type}')
+    print()
+
+    bad_spec = (GridEqual, VFlip, HFlip)
+    P = TreeStructuredProgram(bad_spec)
+    print(P)
+    print('Type check:', P.type_check())
+    print(f'{P.input_type} -> {P.output_type}')
+    print()
+
+    bad_spec = (GridEqual, VFlip, PatchCreate)
+    P = TreeStructuredProgram(bad_spec)
+    print(P)
+    print('Type check:', P.type_check())
+    print(f'{P.input_type} -> {P.output_type}')
+    print()
+
+    good_spec = (PatchExtract, )
+    P = TreeStructuredProgram(good_spec)
+    print(P)
+    print('Type check:', P.type_check())
+    print(f'{P.input_type} -> {P.output_type}')
+    print()
+
+    good_spec = (PatchExtract, HFlip, Int_p(1), Int_p(1), Int_p(1), Int_p(1))
+    P = TreeStructuredProgram(good_spec)
+    print(P)
+    print('Type check:', P.type_check())
+    print(f'{P.input_type} -> {P.output_type}')
+    print()

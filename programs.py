@@ -5,6 +5,13 @@ Izzy Brand, 2020
 
 from primitives import *
 
+def item(x):
+    if isinstance(x, (list, tuple)) and len(x) == 1:
+        return x[0]
+    else:
+        return x
+
+
 class SimpleSequentialProgram:
     def __init__(self, primitives):
         self.primitives = primitives
@@ -66,10 +73,13 @@ class SimpleSequentialProgram:
 
 
 class TreeStructuredProgram:
-    def __init__(self, root=None, children=[]):
-        self.parent = parent
-        self.children = children
-        self.type_check()
+    def __init__(self, spec):
+        if isinstance(spec, (list, tuple)):
+            self.parent = spec[0]
+            self.children = [TreeStructuredProgram(childspec) for childspec in spec[1:]]
+        else:
+            self.parent = spec
+            self.children = []
 
     def type_check(self):
         # if this is an empty program, it type checks w/ NoneType
@@ -80,15 +90,12 @@ class TreeStructuredProgram:
         # if this is a length-1 program, it type checks with the
         # type of the parent (which is assumed to be a primitive)
         elif not self.children:
-            assert isinstance(self.parent, Primitive)
             self.output_type = self.parent.output_type
             self.input_type = self.parent.input_type
             return True
         # if there are children, then we need to recursively type check
         else:
-            assert isinstance(self.parent, Primitive)
             self.output_type = self.parent.output_type
-
             for c in self.children:
                 # type_check recursively
                 if isinstance(c, TreeStructuredProgram) and not c.type_check():
@@ -99,7 +106,8 @@ class TreeStructuredProgram:
             children_output_type = [c.output_type for c in self.children]
 
             # make sure the child output matches the input of the parent
-            if children_output_type != self.parent.input_type:
+            if item(children_output_type) != self.parent.input_type:
+                print(f'{self.parent.name} expects input of type {self.parent.input_type}. Got {item(children_output_type)}.')
                 return False
 
             # if any children accept inputs, they should all accept the same
@@ -109,6 +117,7 @@ class TreeStructuredProgram:
                 if len(set(children_input_type)) == 1:
                     self.input_type = children_input_type[0]
                 else:
+                    print(f'All children must have the same input type. {[c.name for c in self.children]} have different input types.')
                     return False
             else:
                 self.input_type = None
@@ -116,31 +125,52 @@ class TreeStructuredProgram:
             return True
 
     def __str__(self):
-        args = ', '.join([str(c) for c in self.children])
-        return f'{str(self.root)}({args})'
+        if self.parent is None:
+            return 'None'
+        else:
+            args = ', '.join([c.name if hasattr(c, 'name') else str(c) \
+                for c in self.children])
+            return f'{self.parent.name}({args})'
 
-    def __call__(self, x):
-        # if there is no root operation, then this is the identity
-        if self.root is None:
+    def eval(self, x):
+        # if there is no parent operation, then this is the identity
+        if self.parent is None:
             return x
         # if there are child operations, evaluate them
         if self.children:
-            x = [child(x) for child in self.children]
-        # evaluate the root operation
-        return self.root(x)
+            x = [child.eval(x) for child in self.children]
+        # evaluate the parent operation
+        return self.parent.eval(x)
 
 
 if __name__ == '__main__':
-    P = SimpleSequentialProgram([PatchExtract, HFlip])
-    print(P.get_param_list())
+    # P = SimpleSequentialProgram([PatchExtract, HFlip])
+    # print(P.get_param_list())
 
-    param_list = [[0,0,0,0],[]]
-    P.compile(param_list)
-    print(P.get_param_list())
+    # param_list = [[0,0,0,0],[]]
+    # P.compile(param_list)
+    # print(P.get_param_list())
 
-    param_list = [[0,0,1,1],[]]
-    P.compile(param_list)
-    print(P.get_param_list())
+    # param_list = [[0,0,1,1],[]]
+    # P.compile(param_list)
+    # print(P.get_param_list())
 
-    P.decompile()
-    print(P.get_param_list())
+    # P.decompile()
+    # print(P.get_param_list())
+
+    good_spec = (HFlip, (VFlip, VFlip))
+    P = TreeStructuredProgram(good_spec)
+    print(P)
+    print('Type check:', P.type_check())
+    print()
+
+    good_spec = (PatchExtract, HFlip, Int_p(1), Int_p(1), Int_p(1), Int_p(1))
+    P = TreeStructuredProgram(good_spec)
+    print(P)
+    print('Type check:', P.type_check())
+    print()
+
+    bad_spec = (HFlip, VFlip, VFlip)
+    P = TreeStructuredProgram(bad_spec)
+    print(P)
+    print('Type check:', P.type_check())

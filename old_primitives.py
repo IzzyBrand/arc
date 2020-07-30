@@ -43,7 +43,7 @@ def patch_extract_func(self, input_grid):
     try:
         return input_grid[y:y+h, x:x+w]
     except IndexError:
-        return grid
+        return input_grid
 
 PatchExtract = create_primitive(
     name = 'PatchExtract',

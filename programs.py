@@ -64,6 +64,72 @@ class SimpleSequentialProgram:
 
         return x
 
+
+class TreeStructuredProgram:
+    def __init__(self, root=None, children=[]):
+        self.parent = parent
+        self.children = children
+        self.type_check()
+
+    def type_check(self):
+        # if this is an empty program, it type checks w/ NoneType
+        if self.parent is None:
+            self.output_type = None
+            self.input_type = None
+            return True
+        # if this is a length-1 program, it type checks with the
+        # type of the parent (which is assumed to be a primitive)
+        elif not self.children:
+            assert isinstance(self.parent, Primitive)
+            self.output_type = self.parent.output_type
+            self.input_type = self.parent.input_type
+            return True
+        # if there are children, then we need to recursively type check
+        else:
+            assert isinstance(self.parent, Primitive)
+            self.output_type = self.parent.output_type
+
+            for c in self.children:
+                # type_check recursively
+                if isinstance(c, TreeStructuredProgram) and not c.type_check():
+                        return False
+
+            # aggregate the types of the children
+            children_input_type = [c.input_type for c in self.children if c.input_type is not None]
+            children_output_type = [c.output_type for c in self.children]
+
+            # make sure the child output matches the input of the parent
+            if children_output_type != self.parent.input_type:
+                return False
+
+            # if any children accept inputs, they should all accept the same
+            # input type. And that input type becomes the input type of the
+            # entire program
+            if children_input_type:
+                if len(set(children_input_type)) == 1:
+                    self.input_type = children_input_type[0]
+                else:
+                    return False
+            else:
+                self.input_type = None
+
+            return True
+
+    def __str__(self):
+        args = ', '.join([str(c) for c in self.children])
+        return f'{str(self.root)}({args})'
+
+    def __call__(self, x):
+        # if there is no root operation, then this is the identity
+        if self.root is None:
+            return x
+        # if there are child operations, evaluate them
+        if self.children:
+            x = [child(x) for child in self.children]
+        # evaluate the root operation
+        return self.root(x)
+
+
 if __name__ == '__main__':
     P = SimpleSequentialProgram([PatchExtract, HFlip])
     print(P.get_param_list())

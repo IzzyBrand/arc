@@ -14,6 +14,8 @@ Thoughts
 
 ### Types
 
+Hinlee Milner for Type-inference.
+
  * Grid: 2d array of colors
  * Mask: 2d array of boools
  * Shape: A grid and a mask (to allow transparency)

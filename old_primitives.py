@@ -58,8 +58,8 @@ def color_mask_func(self, input_grid):
     c, = self.params
     return input_grid == c
 
-ColorMask = create_primitive(
-    name = 'ColorMask',
+MaskFromColor = create_primitive(
+    name = 'MaskFromColor',
     input_type = ['Grid'],
     output_type = ['Grid'],
     param_type = ['Color'],

@@ -89,11 +89,10 @@ class TreeStructuredProgram:
             return True
 
         # if there are children, then we need to recursively type check
-        self.output_type = self.parent.output_type
         for c in self.children:
             # type_check recursively
-            if isinstance(c, TreeStructuredProgram) and not c.type_check():
-                    return False
+            if not c.type_check():
+                return False
 
         # aggregate the types of the children
         children_input_type = [c.input_type for c in self.children if c.input_type is not None]

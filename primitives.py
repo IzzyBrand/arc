@@ -12,6 +12,7 @@ def create_primitive(func, input_type, output_type):
     func.name = func.__name__
     func.input_type = input_type
     func.output_type = output_type
+    func.type_check = lambda: True
     language.append(func)
 
 def Int_p(i):
@@ -70,7 +71,7 @@ create_primitive(EqualGrid, ['Grid', 'Grid'], 'Mask')
 
 def InvertMask(args):
     mask, = args
-    return 1 - mask
+    return (1 - mask).astype(bool)
 create_primitive(InvertMask, 'Mask', 'Mask')
 
 def Tile(args):
@@ -94,17 +95,47 @@ def CreatePatch(args):
     return np.ones([h,w]) * color
 create_primitive(CreatePatch, ['Int', 'Int', 'Color'], 'Grid')
 
-def ColorMask(args):
+def MaskFromColor(args):
     grid, color = args
     return grid == np.ones_like(grid)*color
-create_primitive(ColorMask, ['Grid', 'Color'], 'Mask')
+create_primitive(MaskFromColor, ['Grid', 'Color'], 'Mask')
+
+def CreateGridFromMask(args):
+    mask, color = args
+    return mask*color
+create_primitive(CreateGridFromMask, ['Mask', 'Color'], 'Grid')
+
+def ColorGridWithMask(args):
+    grid, mask, color = args
+    return grid*(1-mask) + mask*color
+create_primitive(ColorGridWithMask, ['Grid', 'Mask', 'Color'], 'Grid')
+
+def MaskedOverlay(args):
+    grid1, grid2, mask = args
+    return grid1*(1-mask) + grid2*mask
+create_primitive(MaskedOverlay, ['Grid', 'Grid', 'Mask'], 'Grid')
 
 def CountColor(args):
     grid, color = args
     return (grid == color).sum()
 create_primitive(CountColor, ['Grid', 'Color'], 'Int')
 
-def Contract(args):
+def MostFrequentColor(args):
+    grid, = args
+    color_matches = grid.ravel()[:, None] == np.arange(10)[None,:]
+    color_counts = color_matches.sum(axis=0)
+    return np.argmax(color_counts).astype(int)
+create_primitive(MostFrequentColor, 'Grid', 'Color')
+
+def MostFrequentColorWithMask(args):
+    grid, mask = args
+    selected_colors = grid.ravel()[mask.ravel()]
+    color_matches = selected_colors[:, None] == np.arange(10)[None,:]
+    color_counts = color_matches.sum(axis=0)
+    return np.argmax(color_counts).astype(int)
+create_primitive(MostFrequentColorWithMask, ['Grid', 'Mask'], 'Color')
+
+def ContractToMask(args):
     grid, mask = args
     h, w = mask.shape
     v_idxs = np.arange(h)[mask.sum(axis=1) > 0]
@@ -112,7 +143,7 @@ def Contract(args):
     v_min, v_max = np.min(v_idxs), np.max(v_idxs)
     h_min, h_max = np.min(h_idxs), np.max(h_idxs)
     return grid[v_min:v_max+1, h_min:h_max+1]
-create_primitive(Contract, ['Grid', 'Mask'], 'Grid')
+create_primitive(ContractToMask, ['Grid', 'Mask'], 'Grid')
 
 
 if __name__ == '__main__':

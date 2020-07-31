@@ -16,6 +16,13 @@ cmap = ListedColormap([
     "#7FDBFF",
     "#870C25"])
 
+imshow_kwargs = {
+    'cmap': cmap,
+    'interpolation': 'nearest',
+    'vmin': 0,
+    'vmax': 9
+}
+
 def item(x):
     if isinstance(x, (list, tuple)) and len(x) == 1:
         return x[0]
@@ -47,10 +54,9 @@ def run_program_on_task_train(program, task_name, vis=True):
         target = np.array(t['output'])
         score += match(pred, target)
         if vis:
-            axarr[i,0].imshow(pred)
-            axarr[i,1].imshow(target)
+            axarr[i,0].imshow(pred, **imshow_kwargs)
+            axarr[i,1].imshow(target, **imshow_kwargs)
 
     if vis: plt.show()
 
     return float(score)/len(j['train'])
-

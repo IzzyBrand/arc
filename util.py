@@ -31,9 +31,14 @@ def item(x):
     else:
         return x
 
-def print_type(my_type):
-    if isinstance(item(my_type), (list, tuple)):
-        return '(' + ', '.join([print_type(x) for x in my_type[:-1]]) + ' -> ' + print_type(my_type[-1]) + ')'
+def str_type(my_type, input_only=False):
+    if isinstance(my_type, (list, tuple)):
+        if len(my_type) == 1:
+            return my_type[0]
+        if input_only:
+            return '('+', '.join([str_type(x) for x in my_type])+')'
+        else:
+            return '(' + ', '.join([str_type(x) for x in my_type[:-1]]) + ' -> ' + str_type(my_type[-1]) + ')'
     else:
         return my_type
 

@@ -12,6 +12,16 @@ Thoughts
  * Program synthesis should neurally guided to reduce search time
  * We should synthesize new primtives using the train dataset (see [Kevin Ellis: "Growing Libraries of Subroutines with Wake/Sleep Bayesian Program Learning"](https://www.youtube.com/watch?v=_oyGF1YqdJc))
 
+## Strategy
+
+1. Implement bare-bones of language (partially complete. need lambda)
+2. Start trying to solve puzzles. Implement necessary primitives to code solutions in language
+3. Implement program-sampler that efficiently samples programs which type-check
+4. Better program synthesis
+	* Traces
+	* Curriculum learning (start w/ simple puzzles)
+	*
+
 ### Types
 
 Hinlee Milner for Type-inference.
@@ -40,6 +50,10 @@ Hinlee Milner for Type-inference.
  	* Have **Identity** be a program and let it implicitly run between every pair
  	of primtives
  	* With **Identity**, this operation could be adding, replacing, or deleting
+ * Find a program that generates each grid from scratch (regardless of the mapping)
+ 	* Then reason about mapping between programs instead of between grids
+
+
 
 
 ### Features

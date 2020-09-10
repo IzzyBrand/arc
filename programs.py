@@ -7,71 +7,16 @@ from primitives import *
 from util import *
 
 
-class SimpleSequentialProgram:
-    def __init__(self, primitives):
-        self.primitives = primitives
-        assert len(primitives) > 0, 'Program must be non-empty (so far)'
-        self.type_set()
-        self.compiled = False
-
-    def type_check(self):
-        # make sure the types of the primitives are consistent
-        types_consistent = True
-
-        for i in range(len(self.primitives)-1):
-            types_consistent &=\
-            (self.primitives[i].output_type == self.primitives[i+1].input_type)
-
-        return types_consistent
-
-    def type_set(self):
-        # get the types from all the primitives
-        self.input_type = self.primitives[0].input_type
-        self.output_type = self.primitives[-1].output_type
-        self.param_types = [p.param_type for p in self.primitives]
-
-    def compile(self, param_list):
-        # apply the supplied parameters to each primitive
-        if self.compiled:
-            for p, a in zip(self.primitives, param_list):
-                p.__init__(*a)
-        else:
-            self.primitives = [p(*a) for p, a in zip(self.primitives, param_list)]
-
-        self.compiled = True
-
-    def decompile(self):
-        # revert each primitve from an instance to it's class
-        # (effectively deletes the parameter assignments for each primitive)
-        if self.compiled:
-            self.primitives = [p.__class__ for p in self.primitives]
-
-        self.compiled = False
-
-    def get_param_list(self):
-        if self.compiled:
-            return [p.params for p in self.primitives]
-        else:
-            return None
-
-    def __str__(self):
-        return '\n'.join([f'{i}: {str(p)}' for i, p in enumerate(self.primitives)])
-
-    def __call__(self, x):
-        assert self.compiled, 'Program must be compiled to evaluate'
-        # print(self)
-        # execute the program on the given input
-        for primitive in self.primitives:
-            x = primitive(x)
-
-        return x
-
-
-class TreeStructuredProgram:
+class Program:
     def __init__(self, spec):
+        """ Parse a spec (lisp syntax) into a program (tree structure)
+        
+        Arguments:
+            spec {tuple} -- the program specification
+        """
         if isinstance(spec, (list, tuple)):
             self.parent = spec[0]
-            self.children = [TreeStructuredProgram(childspec) for childspec in spec[1:]]
+            self.children = [Program(childspec) for childspec in spec[1:]]
         else:
             self.parent = spec
             self.children = []
@@ -128,49 +73,49 @@ class TreeStructuredProgram:
 
 if __name__ == '__main__':
     spec = (IfGridToGrid, SizeOneGrid_p(0), HasBlackCell, HFlip, VFlip)
-    P = TreeStructuredProgram(spec)
+    P = Program(spec)
     print(P)
     print('Type check:', P.type_check())
     print(str_type(P.my_type))
     print()
 
     good_spec = (HFlip, (VFlip, VFlip))
-    P = TreeStructuredProgram(good_spec)
+    P = Program(good_spec)
     print(P)
     print('Type check:', P.type_check())
     print(str_type(P.my_type))
     print()
 
     bad_spec = (HFlip, VFlip, VFlip)
-    P = TreeStructuredProgram(bad_spec)
+    P = Program(bad_spec)
     print(P)
     print('Type check:', P.type_check())
     print(str_type(P.my_type))
     print()
 
     good_spec = (EqualGrid, VFlip, HFlip)
-    P = TreeStructuredProgram(good_spec)
+    P = Program(good_spec)
     print(P)
     print('Type check:', P.type_check())
     print(str_type(P.my_type))
     print()
 
     bad_spec = (EqualGrid, VFlip, CreatePatch)
-    P = TreeStructuredProgram(bad_spec)
+    P = Program(bad_spec)
     print(P)
     print('Type check:', P.type_check())
     print(str_type(P.my_type))
     print()
 
     good_spec = (ExtractPatch, )
-    P = TreeStructuredProgram(good_spec)
+    P = Program(good_spec)
     print(P)
     print('Type check:', P.type_check())
     print(str_type(P.my_type))
     print()
 
     good_spec = (ExtractPatch, HFlip, Int_p(1), Int_p(1), Int_p(1), Int_p(1))
-    P = TreeStructuredProgram(good_spec)
+    P = Program(good_spec)
     print(P)
     print('Type check:', P.type_check())
     print(str_type(P.my_type))

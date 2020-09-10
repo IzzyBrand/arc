@@ -9,11 +9,10 @@ from util import *
 language = set()
 
 class Primitive:
-    def __init__(self, func, *my_type):
+    def __init__(self, name, func, T):
         self.func = func
-        assert func.__name__.startswith('func'), 'Primitive naming convention violation'
-        self.name = func.__name__.strip('func')
-        self.my_type = my_type
+        self.name = name
+        self.T = T
         self.type_check = lambda: True
         language.add(self)
 

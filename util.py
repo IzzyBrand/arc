@@ -45,6 +45,10 @@ def str_type(my_type, input_only=False):
 def match(pred, target):
     return pred.shape == target.shape and (pred == target).all()
 
+def vis(grid):
+    plt.imshow(grid, **imshow_kwargs)
+    plt.show()
+
 def str_primitive_or_program(p):
     if hasattr(p, 'name'): return p.name
     else: return str(p)

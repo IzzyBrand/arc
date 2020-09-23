@@ -55,10 +55,43 @@ def func1_253bf280(grid):
     return output
 
 
+def func1_99b1bc43(grid):
+    sum_grid = grid[:4] + grid[-4:]
+    mask_grid = (sum_grid > 0) * (sum_grid < 3)
+    output = mask_grid * 3
+    return output
+
+def func1_beb8660c(grid):
+    colors = []
+    counts = []
+    # go through the rows. if they have a colored stripe,
+    # record the color and how many cells are in the stripe
+    for row in grid:
+        count = (row > 0).sum()
+        if count > 0:
+            row_color = row[row > 0][0]
+            colors.append(row_color)
+            counts.append(count)
+
+    # sort the two lists by the counts
+    sorted_idx = np.argsort(counts)
+    counts = np.array(counts)[sorted_idx]
+    colors = np.array(colors)[sorted_idx]
+    # make a black output grid
+    output = np.zeros_like(grid)
+    for i, (count, color) in enumerate(zip(counts, colors)):
+        row_idx = i + grid.shape[0] - colors.shape[0]
+        output[row_idx, -count:] = color
+
+    return output
+
+
 demo_programs = {
     '25d8a9c8': [func1_25d8a9c8],
     '8d510a79': [func1_8d510a79],
-    '253bf280': [func1_253bf280]
+    '253bf280': [func1_253bf280],
+    '99b1bc43': [func1_99b1bc43],
+    'beb8660c': [func1_beb8660c]
 }
 
 def test(task_name, func, subset='train'):
@@ -69,6 +102,7 @@ def test(task_name, func, subset='train'):
     for i, t in enumerate(j[subset]):
         input_grid = np.array(t['input'])
         pred = func(input_grid)
+        # vis(pred)
         target = np.array(t['output'])
         correct &= match(pred, target)
 

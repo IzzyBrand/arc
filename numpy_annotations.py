@@ -92,29 +92,26 @@ def func1_a2fd1cf0(grid):
     print(green)
     output = np.copy(grid)
 
+    #red aboce green
     if green[0,0] > red[0,0]:
-        #green below red
-        if red[1,0] > green[1,0]:
-            #red right of green
-            for x in range(green[1,0], red[1,0]):
-                output[red[0,0], x] = 8
-            for y in range(red[0,0], green[0, 0]):
-                output[y, green[0,1]] = 8
+        for y in range(red[0,0] + 1, green[0, 0]):
+            output[y, green[1,0]] = 8
+    #green above red
+    elif green[0,0] < red[0,0]:
+        for y in range(green[0,0] + 1, red[0,0]):
+            output[y, green[1,0]] = 8
+    #red right of green
+    if red[1,0] > green[1,0]:
+        for x in range(green[1,0] + 1, red[1,0]):
+            output[red[0,0], x] = 8
+    #red left of green
+    elif red[1,0] < green[1,0]:
+        for x in range(red[1,0] + 1, green[1,0]):
+            output[red[0,0], x] = 8
+    #if not same column and not same row, add the "connection joint"
+    if not red[0,0] == green[0,0] and not red[1,0] == green[1,0]:
+        output[red[0,0], green[1,0]] = 8
 
-        else:
-            for x in range(red[1,0], green[1,0]):
-                output[red[0,0], x+1] = 8
-            for y in range(red[0,0], green[0, 0]):
-                output[y, green[1,0]] = 8
-
-    elif green [0,0] < red[0,0]:
-        #green above red
-        if red[1,0] > green[1,0]:
-            #right of green
-            pass
-        #else:
-
-    vis(output)
     return output
 
 demo_programs = {
@@ -134,7 +131,7 @@ def test(task_name, func, subset='train'):
     for i, t in enumerate(j[subset]):
         input_grid = np.array(t['input'])
         pred = func(input_grid)
-        # vis(pred)
+        vis(pred)
         target = np.array(t['output'])
         correct &= match(pred, target)
 

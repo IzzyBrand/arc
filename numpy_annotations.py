@@ -85,13 +85,45 @@ def func1_beb8660c(grid):
 
     return output
 
+def func1_a2fd1cf0(grid):
+    green = np.array(np.where(grid == 3))
+    red = np.array(np.where(grid == 2))
+    print(red.shape)
+    print(green)
+    output = np.copy(grid)
+
+    if green[0,0] > red[0,0]:
+        #green below red
+        if red[1,0] > green[1,0]:
+            #red right of green
+            for x in range(green[1,0], red[1,0]):
+                output[red[0,0], x] = 8
+            for y in range(red[0,0], green[0, 0]):
+                output[y, green[0,1]] = 8
+
+        else:
+            for x in range(red[1,0], green[1,0]):
+                output[red[0,0], x+1] = 8
+            for y in range(red[0,0], green[0, 0]):
+                output[y, green[1,0]] = 8
+
+    elif green [0,0] < red[0,0]:
+        #green above red
+        if red[1,0] > green[1,0]:
+            #right of green
+            pass
+        #else:
+
+    vis(output)
+    return output
 
 demo_programs = {
-    '25d8a9c8': [func1_25d8a9c8],
-    '8d510a79': [func1_8d510a79],
-    '253bf280': [func1_253bf280],
-    '99b1bc43': [func1_99b1bc43],
-    'beb8660c': [func1_beb8660c]
+    # '25d8a9c8': [func1_25d8a9c8],
+    # '8d510a79': [func1_8d510a79],
+    # '253bf280': [func1_253bf280],
+    # '99b1bc43': [func1_99b1bc43],
+    # 'beb8660c': [func1_beb8660c],
+    'a2fd1cf0': [func1_a2fd1cf0],
 }
 
 def test(task_name, func, subset='train'):

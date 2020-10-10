@@ -114,13 +114,27 @@ def func1_a2fd1cf0(grid):
 
     return output
 
+def func1_6430c8c4(grid):
+    grid1 = grid[0:4]
+    grid2 = grid[5:]
+    comb = grid1+grid2
+    black = np.array(np.where(comb == 0))
+
+    res = np.zeros_like(comb)
+
+    for i in range(len(black[0])):
+        res[black[0][i],black[1][i]] = 3
+
+    return res
+
 demo_programs = {
     # '25d8a9c8': [func1_25d8a9c8],
     # '8d510a79': [func1_8d510a79],
     # '253bf280': [func1_253bf280],
     # '99b1bc43': [func1_99b1bc43],
     # 'beb8660c': [func1_beb8660c],
-    'a2fd1cf0': [func1_a2fd1cf0],
+    #'a2fd1cf0': [func1_a2fd1cf0],
+    '6430c8c4': [func1_6430c8c4],
 }
 
 def test(task_name, func, subset='train'):

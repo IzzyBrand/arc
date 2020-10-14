@@ -115,17 +115,87 @@ def func1_a2fd1cf0(grid):
     return output
 
 def func1_6430c8c4(grid):
+    #get top and lower halves, then combine
     grid1 = grid[0:4]
     grid2 = grid[5:]
     comb = grid1+grid2
+    #get blank spots, and make resultant blank board
     black = np.array(np.where(comb == 0))
-
     res = np.zeros_like(comb)
-
+    #fill spots where both grid1 and grid2 have a hole (0s in comb)
     for i in range(len(black[0])):
         res[black[0][i],black[1][i]] = 3
 
     return res
+
+def func1_6aa20dc0(grid):
+    modeTup, vals = get_mode(grid)
+    mode = modeTup[0][0]
+    edges = []
+    filler = int()
+
+    for v in vals.values():
+        if len(v) == 2:
+            edges = v
+            break
+
+    locs0 = np.array(np.where(grid == edges[0]))
+    locs1 = np.array(np.where(grid == edges[1]))
+
+
+
+def find_nearest(grid, loc, clr):
+    '''Returns coordinates of pixel nearest the given location
+    that is the given'''
+    row, col = loc
+
+    height = len(grid)
+    width = len(grid[0])
+
+    inSq = True
+    r = 1
+
+    while inSq:
+
+        leftBound = col - r if col >= r else None
+        rightBound = col + r if col + r < width else None
+        upBound = row - r if row >= r else None
+        downBound = row + r if row + r < height else None
+
+        toCheck = [lambda d: i in -d:d+1 if i >= 0 and i < ]
+
+
+        if leftBound is None and rightBound is None and upBound is None and downBound is None:
+            return None
+
+        if
+
+
+
+
+def get_mode(grid):
+    '''Gets the background pixel of an image '''
+    '''Returns Tuple where first element is tuple of
+    ([mode color(s)], frequency) and second element is
+    dictionary mapping {frequencies: [color(s)]}'''
+    '''Thought it'd be useful to map frequencies to colors
+    to make sorting for highest frequency easier'''
+
+    freqs = dict() #maps colors to frequencies
+
+    for c in range(10):
+        locs = np.array(np.where(grid == c))
+        f = len(locs[0])
+        if f in freqs.keys():
+            freqs[f].append(c)
+        else:
+            freqs[f] = [c]
+
+    modeFreq = max(freqs.keys())
+    mode = freqs[modeFreq]
+
+    return ((mode, modeFreq), freqs)
+
 
 demo_programs = {
     # '25d8a9c8': [func1_25d8a9c8],

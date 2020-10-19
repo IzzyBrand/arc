@@ -3,7 +3,6 @@
 ## (c) Peter Norvig, 2010-16; See http://norvig.com/lispy.html
 
 from __future__ import division
-import math
 import operator as op
 
 ################ Types
@@ -51,7 +50,8 @@ def atom(token):
 def standard_env():
     "An environment with some Scheme standard procedures."
     env = Env()
-    env.update(vars(math)) # sin, cos, sqrt, pi, ...
+    # NOTE(izzy): keep the top-level env small
+    # env.update(vars(math)) # sin, cos, sqrt, pi, ...
     env.update({
         '+':op.add, '-':op.sub, '*':op.mul, '/':op.truediv, 
         '>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '=':op.eq, 
@@ -59,9 +59,10 @@ def standard_env():
         'append':  op.add,  
         'apply':   apply,
         'begin':   lambda *x: x[-1],
-        'car':     lambda x: x[0],
-        'cdr':     lambda x: x[1:], 
-        'cons':    lambda x,y: [x] + y,
+        # NOTE(izzy): we'll use numpy arrays
+        # 'car':     lambda x: x[0],
+        # 'cdr':     lambda x: x[1:],
+        # 'cons':    lambda x,y: [x] + y,
         'eq?':     op.is_, 
         'equal?':  op.eq, 
         'length':  len, 
@@ -133,9 +134,10 @@ def eval(x, env=global_env):
     elif x[0] == 'define':         # (define var exp)
         (_, var, exp) = x
         env[var] = eval(exp, env)
-    elif x[0] == 'set!':           # (set! var exp)
-        (_, var, exp) = x
-        env.find(var)[var] = eval(exp, env)
+    # NOTE(izzy): no mutable variables
+    # elif x[0] == 'set!':           # (set! var exp)
+    #     (_, var, exp) = x
+    #     env.find(var)[var] = eval(exp, env)
     elif x[0] == 'lambda':         # (lambda (var...) body)
         (_, parms, body) = x
         return Procedure(parms, body, env)
@@ -143,3 +145,6 @@ def eval(x, env=global_env):
         proc = eval(x[0], env)
         args = [eval(exp, env) for exp in x[1:]]
         return proc(*args)
+
+if __name__ == '__main__':
+    repl()

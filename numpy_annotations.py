@@ -88,8 +88,6 @@ def func1_beb8660c(grid):
 def func1_a2fd1cf0(grid):
     green = np.array(np.where(grid == 3))
     red = np.array(np.where(grid == 2))
-    print(red.shape)
-    print(green)
     output = np.copy(grid)
 
     #red aboce green
@@ -143,34 +141,31 @@ def func1_6aa20dc0(grid):
     locs1 = np.array(np.where(grid == edges[1]))
 
 
+# def find_nearest(grid, loc, clr):
+#     '''Returns coordinates of pixel nearest the given location
+#     that is the given'''
+#     row, col = loc
 
-def find_nearest(grid, loc, clr):
-    '''Returns coordinates of pixel nearest the given location
-    that is the given'''
-    row, col = loc
+#     height = len(grid)
+#     width = len(grid[0])
 
-    height = len(grid)
-    width = len(grid[0])
+#     inSq = True
+#     r = 1
 
-    inSq = True
-    r = 1
+#     while inSq:
 
-    while inSq:
+#         leftBound = col - r if col >= r else None
+#         rightBound = col + r if col + r < width else None
+#         upBound = row - r if row >= r else None
+#         downBound = row + r if row + r < height else None
 
-        leftBound = col - r if col >= r else None
-        rightBound = col + r if col + r < width else None
-        upBound = row - r if row >= r else None
-        downBound = row + r if row + r < height else None
-
-        toCheck = [lambda d: i in -d:d+1 if i >= 0 and i < ]
-
-
-        if leftBound is None and rightBound is None and upBound is None and downBound is None:
-            return None
-
-        if
+#         toCheck = [lambda d: i in -d:d+1 if i >= 0 and i < ]
 
 
+#         if leftBound is None and rightBound is None and upBound is None and downBound is None:
+#             return None
+
+#         if
 
 
 def get_mode(grid):
@@ -198,12 +193,12 @@ def get_mode(grid):
 
 
 demo_programs = {
-    # '25d8a9c8': [func1_25d8a9c8],
-    # '8d510a79': [func1_8d510a79],
-    # '253bf280': [func1_253bf280],
-    # '99b1bc43': [func1_99b1bc43],
-    # 'beb8660c': [func1_beb8660c],
-    #'a2fd1cf0': [func1_a2fd1cf0],
+    '25d8a9c8': [func1_25d8a9c8],
+    '8d510a79': [func1_8d510a79],
+    '253bf280': [func1_253bf280],
+    '99b1bc43': [func1_99b1bc43],
+    'beb8660c': [func1_beb8660c],
+    'a2fd1cf0': [func1_a2fd1cf0],
     '6430c8c4': [func1_6430c8c4],
 }
 
@@ -215,7 +210,7 @@ def test(task_name, func, subset='train'):
     for i, t in enumerate(j[subset]):
         input_grid = np.array(t['input'])
         pred = func(input_grid)
-        vis(pred)
+        # vis(pred)
         target = np.array(t['output'])
         correct &= match(pred, target)
 

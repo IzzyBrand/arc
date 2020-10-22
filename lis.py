@@ -101,7 +101,10 @@ global_env.update(extended_env)
 def repl(prompt='lis.py> '):
     "A prompt-read-eval-print loop."
     while True:
-        val = eval(parse(raw_input(prompt)))
+        inp = input(prompt)
+        if inp == "quit":
+            break
+        val = eval(parse(input(inp)))
         if val is not None:
             print(lispstr(val))
 
@@ -153,7 +156,7 @@ def eval(x, env=global_env):
     #     env[var] = eval(exp, env)
     #
     # and here is the new version
-    elif x[0] == 'define':         # (define var exp)
+    elif x[0] == 'define':         # (define var exp body)
         (_, var, exp, body) = x
         new_env = Env([var], [eval(exp, env)], outer=env)
         return eval(body, env=new_env)
@@ -172,7 +175,7 @@ def eval(x, env=global_env):
     else:                          # (proc arg...)
         proc = eval(x[0], env)
         args = [eval(exp, env) for exp in x[1:]]
-        if isinstance(proc, np.ndarray): return np.copy(proc[tuple(args)])
+        if isinstance(proc, (np.ndarray, tuple)): return np.copy(proc[tuple(args)])
         else: return proc(*args)
 
 if __name__ == '__main__':

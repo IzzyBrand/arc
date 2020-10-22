@@ -29,6 +29,19 @@ func1_99b1bc43 =\
 ))
 """
 
+# func1_5521c0d9 =\
+#
+# (define blue_indices (where (== grid 1))
+#     (define y_coords (set )
+#     )
+# )
+
+# (define red_indices (where (== grid 2))
+#     (define yell_indices (where (== grid 4))
+#         ()
+#     )
+# )
+
 
 demo_programs = {
     '25d8a9c8': [func1_25d8a9c8],

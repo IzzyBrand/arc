@@ -1,13 +1,12 @@
-""" Massachusetts Institute of Technology
+################ Lispy: Scheme Interpreter in Python
 
-Izzy Brand, 2020
-"""
 ## (c) Peter Norvig, 2010-16; See http://norvig.com/lispy.html
 
 from __future__ import division
 import operator as op
 import numpy as np
 from arc_lisp_env import extended_env
+from arc_lispUI_env import UI_env
 
 ################ Types
 
@@ -95,8 +94,12 @@ class Env(dict):
         "Find the innermost Env where var appears."
         return self if (var in self) else self.outer.find(var)
 
+    def get(self, var):
+        return self[var] if (var in self) else (self.outer.get(var) if self.outer is not None else var)
+
 global_env = standard_env()
 global_env.update(extended_env)
+global_env.update(UI_env)
 
 ################ Interaction: A REPL
 
@@ -132,7 +135,7 @@ def eval(x, env=global_env):
     "Evaluate an expression in an environment."
     # NOTE(izzy): all good
     if isinstance(x, Symbol):      # variable reference
-        return env.find(x)[x]
+        return env.get(x)
 
     # NOTE(izzy): all good
     elif not isinstance(x, List):  # constant literal
@@ -153,16 +156,21 @@ def eval(x, env=global_env):
     # I think we might want to change define to define a variable in a
     # local scope. For reference here is the old version
     #
-    # elif x[0] == 'define':         # (define var exp)
-    #     (_, var, exp) = x
-    #     env[var] = eval(exp, env)
-    #
-    # and here is the new version
-    elif x[0] == 'define':         # (define var exp body)
+    elif x[0] == 'define':         # (define var exp)
+        (_, var, exp) = x
+        env[var] = eval(exp, env)
+        return(eval(var, env))
 
-        (_, var, exp, body) = x
-        new_env = Env([var], [eval(exp, env)], outer=env)
-        return eval(body, env=new_env)
+    # and here is the new version
+    # elif x[0] == 'define':         # (define var exp body)
+    #
+    #     (_, var, exp) = x[:3]
+    #     new_env = Env([var], [eval(exp, env)], outer=env)
+    #     if len(x) == 3:
+    #         body = parse(input('inp body> '))
+    #     elif len(x) == 4:
+    #         body = x[3]
+    #     return eval(body, env=new_env)
 
     # NOTE(izzy): no mutable variables
     # elif x[0] == 'set!':           # (set! var exp)
@@ -174,11 +182,15 @@ def eval(x, env=global_env):
         (_, parms, body) = x
         return Procedure(parms, body, env)
 
+
+
     # NOTE(izzy): all good, but I added a case to allow array indexing
     else:                          # (proc arg...)
         proc = eval(x[0], env)
         args = [eval(exp, env) for exp in x[1:]]
+        print(type(proc))
         if isinstance(proc, (np.ndarray, tuple)): return np.copy(proc[tuple(args)])
+        elif isinstance(proc, (Number, Symbol)): return proc
         else: return proc(*args)
 
 if __name__ == '__main__':

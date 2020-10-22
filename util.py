@@ -27,8 +27,6 @@ imshow_kwargs = {
     'vmax': 9
 }
 
-
-
 def item(x):
     if isinstance(x, (list, tuple)) and len(x) == 1:
         return x[0]
@@ -49,9 +47,11 @@ def str_type(my_type, input_only=False):
 def match(pred, target):
     return pred.shape == target.shape and (pred == target).all()
 
-def vis(grid):
+def vis(grid, block=True):
     plt.imshow(grid, **imshow_kwargs)
-    plt.show()
+    plt.show(block=block)
+    if block == False:
+        plt.pause(0.001)
 
 def str_primitive_or_program(p):
     if hasattr(p, 'name'): return p.name

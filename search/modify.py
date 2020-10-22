@@ -39,16 +39,38 @@ def remove_arg(prog):
     else:
         return None
 
+
+def prog_len(prog):
+    if isinstance(prog, list):
+        return np.sum([prog_len(p) for p in prog])
+    else:
+        return 1
+
 def modify(prog):
-    if isinstance(prog, list) and np.random.rand() > 0.5:
-        i = np.random.choice(len(prog))
-        new_sub_prog = modify(prog[i])
-        if new_sub_prog is None:
-            return None # we failed to modify
-        else:
-            new_prog = deepcopy(prog)
-            new_prog[i] = new_sub_prog
-            return new_prog
+    # We don't want to always modify the top-level program, so we need to
+    # recur down the program tree until we reach a subtree that we want to
+    # modify.
+
+    # NOTE(izzy): ideally the probability of changing a subtree should be
+    # inversely proportional to its size as a fraction of the total program
+    # size.
+    if isinstance(prog, list):
+        subtree_sizes = [prog_len(p) for p in prog]
+        total_size = np.sum(subtree_sizes)
+        # include the size of the total tree as the (n+1)th subtree, so
+        #that if we pick the last element we'll just modify the whole tree
+        subtree_sizes.append(total_size)
+        p = total_size/np.array(subtree_sizes)
+        i = np.random.choice(len(prog) + 1, p=p/p.sum())
+
+        if i < len(prog):
+            new_sub_prog = modify(prog[i])
+            if new_sub_prog is None:
+                return None # we failed to modify
+            else:
+                new_prog = deepcopy(prog)
+                new_prog[i] = new_sub_prog
+                return new_prog
 
     what_to_do = choose([wrap_with_random_func,
                          remove_arg,

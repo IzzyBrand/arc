@@ -13,7 +13,7 @@ def array_assign(*args):
 extended_env = {
 	'zeros_like': np.zeros_like,
 	'logical_and': np.logical_and,
-	'ndarray': lambda *x: np.ndarray(list(x)),
+	'array': lambda *x: np.array(list(x)),
 	'where': np.where,
 	'array_assign': array_assign,
 	':': slice(None),

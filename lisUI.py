@@ -160,7 +160,7 @@ def eval(x, env=global_env):
         (_, var, exp) = x
         env[var] = eval(exp, env)
         return(eval(var, env))
-    #
+
     # and here is the new version
     # elif x[0] == 'define':         # (define var exp body)
     #
@@ -182,11 +182,15 @@ def eval(x, env=global_env):
         (_, parms, body) = x
         return Procedure(parms, body, env)
 
+
+
     # NOTE(izzy): all good, but I added a case to allow array indexing
     else:                          # (proc arg...)
         proc = eval(x[0], env)
         args = [eval(exp, env) for exp in x[1:]]
+        print(type(proc))
         if isinstance(proc, (np.ndarray, tuple)): return np.copy(proc[tuple(args)])
+        elif isinstance(proc, (Number, Symbol)): return proc
         else: return proc(*args)
 
 if __name__ == '__main__':

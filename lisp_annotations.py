@@ -28,13 +28,14 @@ func1_99b1bc43 =\
 ))
 """
 
-# func1_5521c0d9 =\
-#
-# (define blue_indices (where (== grid 1))
-#     (define y_coords (set )
-#     )
-# )
-
+func1_5521c0d9 =\
+"""
+(define blue_indices (where (== grid 1))
+    (define blue_height (- (+ 1 (max (blue_indices 0))) (min (blue_indices 0)))
+        blue_height
+    )
+)
+"""
 # (define red_indices (where (== grid 2))
 #     (define yell_indices (where (== grid 4))
 #         ()
@@ -43,8 +44,9 @@ func1_99b1bc43 =\
 
 
 demo_programs = {
-    '25d8a9c8': [func1_25d8a9c8],
-    '99b1bc43': [func1_99b1bc43],
+    #'25d8a9c8': [func1_25d8a9c8],
+    #'99b1bc43': [func1_99b1bc43],
+    '5521c0d9': [func1_5521c0d9],
 }
 
 
@@ -60,6 +62,7 @@ def test(task_name, func_string, subset='train'):
         input_grid = np.array(t['input'])
         prog_with_input = ['define', 'grid', input_grid, prog]
         pred = eval(prog_with_input)
+        print(pred)
         # vis(pred)
         target = np.array(t['output'])
         correct &= match(pred, target)

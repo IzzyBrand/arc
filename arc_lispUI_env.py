@@ -14,4 +14,5 @@ def make_grid(task_name, index = 0, subset = 'train'):
 
 UI_env = {
 	'make_grid': make_grid,
+	'ndarray': lambda *x: np.ndarray(list(x)),
 }

@@ -8,6 +8,7 @@ from __future__ import division
 import operator as op
 import numpy as np
 from arc_lisp_env import extended_env
+from arc_lispUI_env import UI_env
 
 ################ Types
 
@@ -95,18 +96,23 @@ class Env(dict):
         "Find the innermost Env where var appears."
         return self if (var in self) else self.outer.find(var)
 
+    def get(self, var):
+        return self[var] if (var in self) else (self.outer.get(var) if self.outer is not None else var)
+
 global_env = standard_env()
 global_env.update(extended_env)
+
 
 ################ Interaction: A REPL
 
 def repl(prompt='lis.py> '):
     "A prompt-read-eval-print loop."
+    global_env.update(UI_env)
     while True:
         inp = input(prompt)
         if inp == "quit":
             break
-        val = eval(parse(inp))
+        val = eval(parse(inp), repl=True)
         if val is not None:
             print(lispstr(val))
 
@@ -128,11 +134,12 @@ class Procedure(object):
 
 ################ eval
 
-def eval(x, env=global_env):
+def eval(x, env=global_env, repl=False):
     "Evaluate an expression in an environment."
     # NOTE(izzy): all good
     if isinstance(x, Symbol):      # variable reference
-        return env.find(x)[x]
+        if repl: return env.get(x)
+        else: return env.find(x)[x]
 
     # NOTE(izzy): all good
     elif not isinstance(x, List):  # constant literal
@@ -147,7 +154,7 @@ def eval(x, env=global_env):
     elif x[0] == 'if':             # (if test conseq alt)
         (_, test, conseq, alt) = x
         exp = (conseq if eval(test, env) else alt)
-        return eval(exp, env)
+        return eval(exp, env, repl = repl)
 
     # NOTE(izzy): Previously, define mutated the toplevel environment
     # I think we might want to change define to define a variable in a
@@ -161,8 +168,14 @@ def eval(x, env=global_env):
     elif x[0] == 'define':         # (define var exp body)
 
         (_, var, exp, body) = x
-        new_env = Env([var], [eval(exp, env)], outer=env)
-        return eval(body, env=new_env)
+        new_env = Env([var], [eval(exp, env, repl = repl)], outer=env)
+        return eval(body, env=new_env, repl = repl)
+
+    elif x[0] == 'ordain':         # (define var exp)
+        (_, var, exp) = x
+        env[var] = eval(exp, env, repl = repl)
+        return(eval(var, env, repl = repl))
+
 
     # NOTE(izzy): no mutable variables
     # elif x[0] == 'set!':           # (set! var exp)
@@ -176,9 +189,11 @@ def eval(x, env=global_env):
 
     # NOTE(izzy): all good, but I added a case to allow array indexing
     else:                          # (proc arg...)
-        proc = eval(x[0], env)
-        args = [eval(exp, env) for exp in x[1:]]
-        if isinstance(proc, (np.ndarray, tuple)): return np.copy(proc[tuple(args)])
+        proc = eval(x[0], env, repl = repl)
+        args = [eval(exp, env, repl = repl) for exp in x[1:]]
+        if isinstance(proc, np.ndarray): return np.copy(proc[tuple(args)])
+        elif isinstance(proc, tuple): return np.copy(proc[args[0]])
+        elif isinstance(proc, (Number, Symbol)): return proc
         else: return proc(*args)
 
 if __name__ == '__main__':

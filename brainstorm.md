@@ -4,7 +4,14 @@ This is a meta-learning task, so for each instance we are given a few input-outp
 
 The dataset has 400 train tasks, 400 validation tasks, and 200 help out test tasks.
 
-Thoughts
+## TODO
+ * Finish the task with moving the blocks (Noah)
+ * implement a few more lisp annotations -- ideally with recursion or map (Noah)
+ * Add heuristics to the score function (Both)
+ * Think about how to add types (izzy for now)
+ * implement assignment from tuples (izzy)
+
+## Thoughts
 
  * Program synthesis is the way to go
  * we should use all three guesses -> three different "correct" programs (see [Principle of Multiple Explanations](http://guillefix.me/cosmos/static/Principle%2520of%2520multiple%2520explanations.html))

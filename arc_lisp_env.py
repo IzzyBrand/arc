@@ -21,14 +21,16 @@ def make_grid(task_name, index=0, subset='train'):
 extended_env = {
     'zeros_like': np.zeros_like,
     'logical_and': np.logical_and,
-    'ndarray': lambda *x: np.ndarray(list(x)),
     'where': np.where,
     'array_assign': array_assign,
     ':': slice(None),
     'slice': slice,
     'None': None,
     'map': map,
+	'min': min,
     'max': max,
     'set': set,
+	'len': len,
     'make_grid': make_grid,
+	'tuple': tuple,
 }

@@ -9,6 +9,7 @@ import json
 from lis import eval, lispstr, global_env
 from lisp_annotations import test as lisp_test
 from search.heuristics import score as heuristic_score
+from search.modify import modify
 from util import match, vis
 
 def run_program_on_task(task_fname, prog, subset='train', score_func=match):
@@ -30,47 +31,13 @@ def run_program_on_task(task_fname, prog, subset='train', score_func=match):
 
     return np.mean(scores)
 
-
 def prog_len(prog):
     if isinstance(prog, List):
         return np.sum([prog_len(p) for p in prog])
     else:
         return 1
 
-def wrap_with_random_func(prog):
-    func = np.random.choice(list(global_env.values()))
-    return [func, prog]
-
-def add_arg(prog):
-    if isinstance(prog, list):
-        idx_to_add = np.random.randint(1, len(prog)+1)
-        what_to_add = np.random.choice(['color', 'grid', 'number', 'None'])
-        if what_to_add == 'color':
-            new_thing = np.random.randint(10)
-        elif what_to_add == 'grid':
-            new_thing = 'grid'
-        elif what_to_add == 'number':
-            new_thing = np.random.geometric(0.5)
-        elif what_to_add == 'None':
-            new_thing = None
-        return prog[:idx_to_add] + [new_thing] + prog[idx_to_add:]
-    else:
-        return None
-
-def remove_arg(prog):
-    if isinstance(prog, list) and len(prog) > 1:
-        idx_to_remove = np.random.randint(1, len(prog))
-        return [p for i, p in enumerate(prog) if i != idx_to_remove]
-    else:
-        return None
-
-def modify(prog):
-    what_to_do = np.random.choice([wrap_with_random_func, remove_arg, add_arg])
-    return what_to_do(prog)
-
-
 def modify_pool(task_fname, pool, max_pool_size=100):
-
     prog = np.random.choice(pool)
     new_prog = modify(prog)
     if new_prog is None: return # in this case we haven't made any changes
@@ -89,12 +56,22 @@ def modify_pool(task_fname, pool, max_pool_size=100):
             idx = np.random.choice(np.where(new_prog_is_better)[0])
             pool[idx] = new_prog
 
-task_fnames = os.listdir('ARC/data/training')
-for task_fname in task_fnames:
-    print(f'Working on task: {task_fname}')
-    with open(f'ARC/data/training/{task_fname}') as f:
-        j = json.load(f)
-        vis(np.array(j['train'][0]['input']), block=False)
-    pool = ['grid']
-    for _ in range(10000):
-        modify_pool(task_fname, pool)
+task_fname = np.random.choice(os.listdir('ARC/data/training'))
+print(f'Working on task: {task_fname}')
+# with open(f'ARC/data/training/{task_fname}') as f:
+#     j = json.load(f)
+#     vis(np.array(j['train'][0]['input']), block=False)
+pool = ['grid']
+high_score = 0
+for i in range(10000):
+    print(f'Iteration {i}\thigh score: {high_score}')
+    modify_pool(task_fname, pool)
+
+    # print if we've increased the high score
+    scores = np.array([run_program_on_task(task_fname, prog, score_func=heuristic_score)\
+        for prog in pool])
+    best_score_idx = np.argmax(scores)
+    if scores[best_score_idx] > high_score:
+        high_score = scores[best_score_idx]
+        print(f'New high score! {high_score}')
+        print(lispstr(pool[best_score_idx]))

@@ -1,3 +1,7 @@
+""" Massachusetts Institute of Technology
+
+Izzy Brand, 2020
+"""
 import numpy as np
 
 def array_assign(*args):

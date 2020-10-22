@@ -2,7 +2,6 @@
 
 Izzy Brand, 2020
 """
-
 import json
 import numpy as np
 from util import match, vis

@@ -1,5 +1,7 @@
-################ Lispy: Scheme Interpreter in Python
+""" Massachusetts Institute of Technology
 
+Izzy Brand, 2020
+"""
 ## (c) Peter Norvig, 2010-16; See http://norvig.com/lispy.html
 
 from __future__ import division

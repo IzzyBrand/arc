@@ -1,3 +1,7 @@
+""" Massachusetts Institute of Technology
+
+Izzy Brand, 2020
+"""
 import json
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap

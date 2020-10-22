@@ -40,7 +40,7 @@ def read_from_tokens(tokens):
         return atom(token)
 
 def atom(token):
-    "Numbers become numbers; every other token is a symbol."
+    "Numbers become numbers; every other token is a ."
     try: return int(token)
     except ValueError:
         try: return float(token)
@@ -104,7 +104,7 @@ def repl(prompt='lis.py> '):
         inp = input(prompt)
         if inp == "quit":
             break
-        val = eval(parse(input(inp)))
+        val = eval(parse(inp))
         if val is not None:
             print(lispstr(val))
 
@@ -157,6 +157,7 @@ def eval(x, env=global_env):
     #
     # and here is the new version
     elif x[0] == 'define':         # (define var exp body)
+
         (_, var, exp, body) = x
         new_env = Env([var], [eval(exp, env)], outer=env)
         return eval(body, env=new_env)

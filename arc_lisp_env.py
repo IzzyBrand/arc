@@ -20,12 +20,14 @@ def make_grid(task_name, index=0, subset='train'):
 	except:
 		print("TypeError: invalid parameters for make_grid()")
 
+
 extended_env = {
     'zeros_like': np.zeros_like,
     'logical_and': np.logical_and,
     'where': np.where,
 	'array': lambda *x: np.array(list(x)),
     'array_assign': array_assign,
+	# 'rotate': np.rot90,
 	'concat': lambda *x: np.concatenate(x[:-1], x[-1]) if type(x[-1]) is int else np.concatenate(x),
 	'shape': np.shape,
     ':': slice(None),

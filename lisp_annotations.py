@@ -58,32 +58,27 @@ func2_5521c0d9 =\
 func1_46442a0e =\
 """
 (define rotate (lambda (matrix index) (if (== index 1)(array_assign matrix : (- ((shape grid) 1) index) (grid (- index 1)))(rotate (array_assign matrix : (- ((shape grid) 1) index) (grid (- index 1))) (- index 1))))
-    (define flip (lambda (matrix index) (if (== index 1) (array_assign matrix : (- index 1) ((matrix : (- index 1)) (slice None None -1))) (flip (array_assign matrix : (- index 1) ((matrix : (- index 1)) (slice None None -1))) (- index 1))))
-        (define rot1 (rotate grid ((shape grid) 1))
-            (define top (concat grid rot1 1)
-                (define bott (flip top ((shape top) 1))
-                    (concat top bottom)
+    (define flip_col (lambda (matrix index) (if (== index 1) (array_assign matrix : (- index 1) ((matrix : (- index 1)) (slice None None -1))) (flip_col (array_assign matrix : (- index 1) ((matrix : (- index 1)) (slice None None -1))) (- index 1))))
+        (define flip_row (lambda (matrix index) (if (== index 1) (array_assign matrix (- index 1) ((matrix (- index 1)) (slice None None -1))) (flip_row (array_assign matrix (- index 1) ((matrix (- index 1)) (slice None None -1))) (- index 1))))
+            (define rot1 (rotate grid ((shape grid) 1))
+                (define top (concat grid rot1 1)
+                    (define bott (flip_row (flip_col top ((shape top) 1)) ((shape top) 0))
+                        (concat top bott)
+                    )
                 )
             )
         )
     )
 )
-
 """
 
-# (define rotate (lambda (matrix index) (if (== index 1)(array_assign matrix : (- ((shape grid) 1) index) (grid (- index 1))) (rotate (array_assign matrix : (- ((shape grid) 1) index) (grid (- index 1))) (- index 1))))
-# (define flip (lambda (matrix index) (if (== index 1) (array_assign matrix : (- index 1) ((matrix : (- index 1)) (slice None None -1))) (flip (array_assign matrix : (- index 1) ((matrix : (- index 1)) (slice None None -1))) (- index 1))))
-# (define rot1 (rotate grid ((shape grid) 1))
-# (define top (concat grid rot1 1)
-# (define bott (flip top ((shape top) 1))
-# (concat top bott))))))
 
 
 
 demo_programs = {
-    #'25d8a9c8': [func1_25d8a9c8],
-    #'99b1bc43': [func1_99b1bc43],
-    #'5521c0d9': [func1_5521c0d9, func2_5521c0d9],
+    # '25d8a9c8': [func1_25d8a9c8],
+    # '99b1bc43': [func1_99b1bc43],
+    # '5521c0d9': [func1_5521c0d9, func2_5521c0d9],
     '46442a0e': [func1_46442a0e],
 }
 
@@ -101,7 +96,7 @@ def test(task_name, func_string, subset='train'):
         prog_with_input = ['define', 'grid', input_grid, prog]
         pred = eval(prog_with_input)
         #print(pred)
-        # vis(pred)
+        vis(pred)
         target = np.array(t['output'])
         correct &= match(pred, target)
 

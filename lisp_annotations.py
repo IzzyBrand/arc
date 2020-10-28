@@ -31,22 +31,60 @@ func1_99b1bc43 =\
 func1_5521c0d9 =\
 """
 (define blue_indices (where (== grid 1))
-    (define blue_height (- (+ 1 (max (blue_indices 0))) (min (blue_indices 0)))
-        blue_height
+    (define blue_shift (- (min (blue_indices 0)) (+ 1 (max (blue_indices 0))))
+        (define ret (zeros_like grid)
+            (define ret (array_assign ret (+ blue_shift (blue_indices 0)) (blue_indices 1) 1)
+
+                (define red_indices (where (== grid 2))
+                    (define red_shift (- (min (red_indices 0)) (+ 1 (max (red_indices 0))))
+                        (define ret (array_assign ret (+ red_shift (red_indices 0)) (red_indices 1) 2)
+
+                            (define yellow_indices (where (== grid 4))
+                                (define yellow_shift (- (min (yellow_indices 0)) (+ 1 (max (yellow_indices 0))))
+                                    (array_assign ret (+ yellow_shift (yellow_indices 0)) (yellow_indices 1) 4)
+)   )   )   )   )   )   )   )   )
+"""
+
+func2_5521c0d9 =\
+"""
+(define update (lambda (board color) (define indices (where (== grid color)) (define shift (- (min (indices 0)) (+ 1 (max (indices 0)))) (array_assign board (+ shift (indices 0)) (indices 1) color))))
+    (define ret (zeros_like grid)
+        (define ret (update ret 1)
+            (define ret (update ret 2)
+                (update ret 4)
+)   )   )   )
+"""
+
+func1_46442a0e =\
+"""
+(define rotate (lambda (matrix index) (if (== index 1)(array_assign matrix : (- ((shape grid) 1) index) (grid (- index 1)))(rotate (array_assign matrix : (- ((shape grid) 1) index) (grid (- index 1))) (- index 1))))
+    (define flip (lambda (matrix index) (if (== index 1) (array_assign matrix : (- index 1) ((matrix : (- index 1)) (slice None None -1))) (flip (array_assign matrix : (- index 1) ((matrix : (- index 1)) (slice None None -1))) (- index 1))))
+        (define rot1 (rotate grid ((shape grid) 1))
+            (define top (concat grid rot1 1)
+                (define bott (flip top ((shape top) 1))
+                    (concat top bottom)
+                )
+            )
+        )
     )
 )
+
 """
-# (define red_indices (where (== grid 2))
-#     (define yell_indices (where (== grid 4))
-#         ()
-#     )
-# )
+
+# (define rotate (lambda (matrix index) (if (== index 1)(array_assign matrix : (- ((shape grid) 1) index) (grid (- index 1))) (rotate (array_assign matrix : (- ((shape grid) 1) index) (grid (- index 1))) (- index 1))))
+# (define flip (lambda (matrix index) (if (== index 1) (array_assign matrix : (- index 1) ((matrix : (- index 1)) (slice None None -1))) (flip (array_assign matrix : (- index 1) ((matrix : (- index 1)) (slice None None -1))) (- index 1))))
+# (define rot1 (rotate grid ((shape grid) 1))
+# (define top (concat grid rot1 1)
+# (define bott (flip top ((shape top) 1))
+# (concat top bott))))))
+
 
 
 demo_programs = {
     #'25d8a9c8': [func1_25d8a9c8],
     #'99b1bc43': [func1_99b1bc43],
-    '5521c0d9': [func1_5521c0d9],
+    #'5521c0d9': [func1_5521c0d9, func2_5521c0d9],
+    '46442a0e': [func1_46442a0e],
 }
 
 
@@ -62,7 +100,7 @@ def test(task_name, func_string, subset='train'):
         input_grid = np.array(t['input'])
         prog_with_input = ['define', 'grid', input_grid, prog]
         pred = eval(prog_with_input)
-        print(pred)
+        #print(pred)
         # vis(pred)
         target = np.array(t['output'])
         correct &= match(pred, target)
@@ -75,4 +113,4 @@ if __name__ == '__main__':
         for func_string in demo_programs[task_name]:
             train_correct = test(task_name, func_string, 'train')
             test_correct = test(task_name, func_string, 'test')
-            print(f'{task_name}:\t Train: {train_correct}\tTrain: {test_correct}')
+            print(f'{task_name}:\t Train: {train_correct}\tTest: {test_correct}')

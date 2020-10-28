@@ -89,7 +89,7 @@ def func1_a2fd1cf0(grid):
     red = np.array(np.where(grid == 2))
     output = np.copy(grid)
 
-    #red aboce green
+    #red above green
     if green[0,0] > red[0,0]:
         for y in range(red[0,0] + 1, green[0, 0]):
             output[y, green[1,0]] = 8

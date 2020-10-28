@@ -9,6 +9,7 @@ import operator as op
 import numpy as np
 from arc_lisp_env import extended_env
 from arc_lispUI_env import UI_env
+import sys
 
 ################ Types
 
@@ -107,12 +108,16 @@ global_env.update(extended_env)
 
 def repl(prompt='lis.py> '):
     "A prompt-read-eval-print loop."
-    global_env.update(UI_env)
+    #global_env.update(UI_env)
+
+    for file in sys.argv[1:]:
+        eval_file(file, repl = True, display = False)
+
     while True:
         inp = input(prompt)
         if inp == "quit":
             break
-        val = eval(parse(inp), repl=True)
+        val = eval(parse(inp), repl=False)
         if val is not None:
             print(lispstr(val))
 
@@ -191,10 +196,24 @@ def eval(x, env=global_env, repl=False):
     else:                          # (proc arg...)
         proc = eval(x[0], env, repl = repl)
         args = [eval(exp, env, repl = repl) for exp in x[1:]]
-        if isinstance(proc, np.ndarray): return np.copy(proc[tuple(args)])
-        elif isinstance(proc, tuple): return np.copy(proc[args[0]])
-        elif isinstance(proc, (Number, Symbol)): return proc
-        else: return proc(*args)
+        try:
+            if isinstance(proc, np.ndarray): return np.copy(proc[tuple(args)])
+            elif isinstance(proc, tuple): return np.copy(proc[args[0]])
+            elif isinstance(proc, (Number, Symbol)): return proc
+            else: return proc(*args)
+        except:
+            print(x)
+            print(args)
+
+def eval_file(filename, env = global_env, repl = False, display = False):
+    f = open(filename, 'r')
+    for line in f:
+        if line[0] == "(":
+            try:
+                val = eval(parse(line), env = env, repl = repl)
+                if print: print(val)
+            except:
+                print("Error on line: " + line)
 
 if __name__ == '__main__':
     repl()

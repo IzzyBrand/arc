@@ -9,7 +9,6 @@ from copy import deepcopy
 import operator as op
 import numpy as np
 from arc_lisp_env import extended_env
-from arc_lispUI_env import UI_env
 import sys
 
 ################ Types
@@ -119,7 +118,6 @@ global_env.update(extended_env)
 
 def repl(prompt='lis.py> '):
     "A prompt-read-eval-print loop."
-    #global_env.update(UI_env)
 
     for file in sys.argv[1:]:
         eval_file(file, repl = True, display = False)

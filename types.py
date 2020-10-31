@@ -63,6 +63,7 @@ class TemplateType(Type):
     def __str__(self):
         return f"<{self.T}>"
 
+
 if __name__ == '__main__':
     i_T = Type("Int")
     c_T = Type("Color")
@@ -80,5 +81,3 @@ if __name__ == '__main__':
     output_type = ArrayType(T2)
     map_T = FuncType(input_type, output_type)
     print("map:", map_T)
-
-

@@ -178,34 +178,32 @@ def eval(x, env=global_env, repl=False):
 
     # NOTE(izzy): Previously, define mutated the toplevel environment
     # I think we might want to change define to define a variable in a
-    # local scope. For reference here is the old version
-    #
-    # elif x[0] == 'define':         # (define var exp)
-    #     (_, var, exp) = x
-    #     env[var] = eval(exp, env)
-    #
-    # and here is the new version
+    # local scope.
     elif x[0] == 'define':         # (define var exp body)
 
+        # NOTE(izzy): this implementation is more efficient, because it doesn't
+        # but doesn't copy the environment, but it doesn't support recursion.
+        # The reason recursion won't work, is because to create the new
+        # environment which we pass to the body, we need to evaluate `exp`, the
+        # variable to be bound in the new environment. In the case where we are
+        # defining a recursive function, exp needs access to itself
         # (_, var, exp, body) = x
         # new_env = Env([var], [eval(exp, env, repl = repl)], outer=env)
         # return eval(body, env=new_env, repl = repl)
 
+        # NOTE(izzy): this implementation does support recursion, but it copies
+        # the environment every time which isn't great
         (_, var, exp, body) = x
-        tmp_env = deepcopy(env)
-        tmp_env[var] = eval(exp, tmp_env, repl = repl)
-        return eval(body, env=tmp_env, repl = repl)
+        new_env = deepcopy(env)
+        new_env[var] = eval(exp, new_env, repl = repl)
 
-    elif x[0] == 'ordain':         # (define var exp)
+        return eval(body, env=new_env, repl = repl)
+
+    # NOTE(izzy): only used the REPL. Modifies the environment
+    elif x[0] == 'ordain':         # (ordain var exp)
         (_, var, exp) = x
         env[var] = eval(exp, env, repl = repl)
         return(eval(var, env, repl = repl))
-
-
-    # NOTE(izzy): no mutable variables
-    # elif x[0] == 'set!':           # (set! var exp)
-    #     (_, var, exp) = x
-    #     env.find(var)[var] = eval(exp, env)
 
     # NOTE(izzy): all good
     elif x[0] == 'lambda':         # (lambda (var...) body)
@@ -214,22 +212,24 @@ def eval(x, env=global_env, repl=False):
 
     # NOTE(izzy): all good, but I added a case to allow array indexing
     else:                          # (proc arg...)
-        proc = eval(x[0], env, repl = repl)
-        args = [eval(exp, env, repl = repl) for exp in x[1:]]
         try:
+            proc = eval(x[0], env, repl = repl)
+            args = [eval(exp, env, repl = repl) for exp in x[1:]]
             if isinstance(proc, np.ndarray): return np.copy(proc[tuple(args)])
             elif isinstance(proc, tuple): return proc[args[0]]
             elif isinstance(proc, (Number, Symbol)): return proc
             else: return proc(*args)
+
         except Exception as E:
-            print(E)
-            print('Environments')
-            print(env)
-            print(env.outer)
-            print(env.outer.outer)
-            print(env.outer.outer.outer)
-            print(env.outer.outer.outer.outer)
-            print(env.outer.outer.outer.outer.outer)
+            print(E, '\n')
+            # for debug purposes, if we get an error recur up the environment
+            # and dump the contents to the terminal before exiting
+            env_counter = 0
+            while env is not None:
+                print('Environment', env_counter, env)
+                env = env.outer
+                env_counter += 1
+
             sys.exit(1)
 
 

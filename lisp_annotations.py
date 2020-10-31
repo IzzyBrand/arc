@@ -76,9 +76,9 @@ func1_46442a0e =\
 
 
 demo_programs = {
-    # '25d8a9c8': [func1_25d8a9c8],
-    # '99b1bc43': [func1_99b1bc43],
-    # '5521c0d9': [func1_5521c0d9, func2_5521c0d9],
+    '25d8a9c8': [func1_25d8a9c8],
+    '99b1bc43': [func1_99b1bc43],
+    '5521c0d9': [func1_5521c0d9, func2_5521c0d9],
     '46442a0e': [func1_46442a0e],
 }
 
@@ -96,7 +96,7 @@ def test(task_name, func_string, subset='train'):
         prog_with_input = ['define', 'grid', input_grid, prog]
         pred = eval(prog_with_input)
         #print(pred)
-        vis(pred)
+        # vis(pred)
         target = np.array(t['output'])
         correct &= match(pred, target)
 

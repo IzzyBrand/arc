@@ -9,6 +9,11 @@ The dataset has 400 train tasks, 400 validation tasks, and 200 help out test tas
  * implement a few more lisp annotations -- ideally with recursion or map (Noah)
  * Add heuristics to the score function (Both)
  * Think about how to add types (izzy for now)
+ 	* types will be used for the following capabilities
+ 		* check if a program is valid
+ 		* get the type of a subtree
+ 		* we may have to infer the type of arguments to a lambda
+ 		* for templated types, we may have to consider sets of valid types
  * implement assignment from tuples (izzy)
 
 ## Thoughts

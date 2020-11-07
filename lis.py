@@ -33,7 +33,7 @@ def read_from_tokens(tokens):
         raise SyntaxError('unexpected EOF while reading')
     token = tokens.pop(0)
     if '(' == token:
-        L = []
+        L = AST() # use an abstract syntax tree instead of a list
         while tokens[0] != ')':
             L.append(read_from_tokens(tokens))
         tokens.pop(0) # pop off ')'

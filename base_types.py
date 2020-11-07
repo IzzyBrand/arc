@@ -63,15 +63,16 @@ class TemplateType(Type):
     def __str__(self):
         return f"<{self.T}>"
 
+Int_T = Type("Int")
+Color_T = Type("Color")
+Bool_T = Type("Bool")
 
 if __name__ == '__main__':
-    int_T = Type("Int")
-    color_T = Type("Color")
-    colorarray_T = ArrayType(color_T)
+    colorarray_T = ArrayType(Color_T)
     l_t = Type("List")
 
     # example of a function that counts the number of pixels of a certain color
-    colorcount_T = FuncType((colorarray_T, color_T), int_T)
+    colorcount_T = FuncType((colorarray_T, Color_T), Int_T)
     print("colorcount:", colorcount_T)
 
     # example of the type of map using a template type

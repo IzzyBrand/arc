@@ -9,13 +9,8 @@ from copy import deepcopy
 import operator as op
 import numpy as np
 from arc_lisp_env import extended_env
+from ast import AST
 import sys
-
-################ Types
-
-Symbol = str          # A Lisp Symbol is implemented as a Python str
-List   = list         # A Lisp List is implemented as a Python list
-Number = (int, float) # A Lisp Number is implemented as a Python int or float
 
 ################ Parsing: parse, tokenize, and read_from_tokens
 
@@ -47,9 +42,7 @@ def atom(token):
     "Numbers become numbers; every other token is a ."
     try: return int(token)
     except ValueError:
-        try: return float(token)
-        except ValueError:
-            return Symbol(token)
+        return token
 
 ################ Environments
 
@@ -132,7 +125,7 @@ def repl(prompt='lis.py> '):
 
 def lispstr(exp):
     "Convert a Python object back into a Lisp-readable string."
-    if isinstance(exp, List):
+    if isinstance(exp, list):
         return '(' + ' '.join(map(lispstr, exp)) + ')'
     else:
         return str(exp)
@@ -162,7 +155,7 @@ def eval(x, env=global_env, repl=False):
         return ans
 
     # NOTE(izzy): all good
-    elif not isinstance(x, List):  # constant literal
+    elif not isinstance(x, AST):  # constant literal
         return x
 
     # NOTE(izzy): no need for quotations
@@ -217,7 +210,7 @@ def eval(x, env=global_env, repl=False):
             args = [eval(exp, env, repl = repl) for exp in x[1:]]
             if isinstance(proc, np.ndarray): return np.copy(proc[tuple(args)])
             elif isinstance(proc, tuple): return proc[args[0]]
-            elif isinstance(proc, (Number, Symbol)): return proc
+            elif isinstance(proc, (int, str)): return proc
             else: return proc(*args)
 
         except Exception as E:

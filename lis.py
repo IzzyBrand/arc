@@ -9,11 +9,8 @@ from copy import deepcopy
 import operator as op
 import numpy as np
 import sys
-
 from arc_lisp_env import extended_env
-from ast import AST
-from type_system import typed_env, IntConstructor
-from another_type_check import type_check
+from type_system import typed_env, type_check
 
 ################ Parsing: parse, tokenize, and read_from_tokens
 
@@ -31,7 +28,7 @@ def read_from_tokens(tokens):
         raise SyntaxError('unexpected EOF while reading')
     token = tokens.pop(0)
     if '(' == token:
-        L = AST() # use an abstract syntax tree instead of a list
+        L = []
         while tokens[0] != ')':
             L.append(read_from_tokens(tokens))
         tokens.pop(0) # pop off ')'
@@ -43,7 +40,8 @@ def read_from_tokens(tokens):
 
 def atom(token):
     "Numbers become numbers; every other token is a ."
-    try: return IntConstructor(token)
+    try:
+        return int(token)
     except ValueError:
         return token
 
@@ -97,13 +95,14 @@ def repl(prompt='lis.py> ', env=global_env):
         inp = input(prompt)
         if inp == "quit":
             break
-        ast = parse(inp)
-        print(ast)
-        pass_type_check, type_tree = type_check(ast, env)
-        print(f'Type check? {pass_type_check}\tType {str(type_tree[0])}')
-        val = eval(ast, repl=False, env=env)
-        if val is not None:
-            print(lispstr(val))
+        prog = parse(inp)
+        print(prog)
+        pass_type_check, type_tree = type_check(prog, env)
+        print(f'Type check? {pass_type_check}\tType {type_tree}')
+        if pass_type_check:
+            val = eval(prog, repl=False, env=env)
+            if val is not None:
+                print(lispstr(val))
 
 def lispstr(exp):
     "Convert a Python object back into a Lisp-readable string."
@@ -137,7 +136,7 @@ def eval(x, env=global_env, repl=False):
         return ans
 
     # NOTE(izzy): all good
-    elif not isinstance(x, AST):  # constant literal
+    elif not isinstance(x, list):  # constant literal
         return x
 
     # NOTE(izzy): no need for quotations

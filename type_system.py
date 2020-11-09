@@ -1,5 +1,4 @@
 import operator as op
-from ast import AST
 ###############################################################################
 # Types
 ###############################################################################
@@ -85,8 +84,10 @@ Bool_T = Type("Bool")
 ###############################################################################
 # type_check
 ###############################################################################
+def get_type_of_primitive(x):
+    return x.T if isinstance(x, Primitive) else type(x)
 
-def type_check(prog, env):
+def type_check(x, env):
     """ Computes the type of this tree and all of it's children.
     
     Returns:
@@ -94,62 +95,74 @@ def type_check(prog, env):
                 True otherwise.
     """
 
-    # NOTE(izzy):
-    # * might need to add an environment which gets passed around during typecheck?
-    # * We might need to allow things other than FuncType to have children to allow 
-    #   array and tuple slicing
-
-    print('[type_check]', prog)
+    # NOTE(izzy) We might need to allow things other than FuncType to have
+    # children to allow array and tuple slicing?
 
     # look up in the environment if it's a string
-    if isinstance(prog, str):
-        dereferenced_prog = env.find(prog)[prog]
-        return type_check(dereferenced_prog, env)
+    if isinstance(x, str):
+        dereferenced_x = env.find(x)[x]
+        return type_check(dereferenced_x, env)
 
-    # primitives always pass the type check
-    elif isinstance(prog, Primitive):
-        return True
-
-    elif isinstance(prog, AST):
+    elif isinstance(x, list):
         # type check the node and the children. fail if they fail
-        for child in prog:
-            if not type_check(child, env): return False
+        child_types = []
+        for child in x:
+            passed_type_check, child_type = type_check(child, env)
+            if passed_type_check:
+                child_types.append(child_type)
+            else:
+                return False, []
 
+        func_type = child_types[0]
+        arg_types = child_types[1:]
         # if there are no children, then the node is the type of this tree:
-        if len(prog[1:]) == 0:
-            prog.T = prog[0].T
-            return True
+        if len(arg_types) == 0:
+            return True, func_type
 
-        # if we have chilren, then they are the arguments to the node
+        # if we have children, then they are the arguments to the node
         
         # check that the node is a FuncType, and error if not
-        if not isinstance(prog[0].T, FuncType):
-            print(f'{str(prog[0].T)} does not accept arguments. Given:')
-            for c in prog[1:]:
-                print(f'\t{str(c.T)}')
-            return False
+        if not isinstance(func_type, FuncType):
+            print(f'{str(func_type)} does not accept arguments. Given:')
+            for t in arg_types:
+                print('\t', t)
+            return False, []
 
-        # check that we have the correct number of arguments
-        if len(prog[1:]) != len(prog[0].T[0]):
-            print(f'Incorrect number of arguments to {str(prog[0].T)}. Received:')
-            for c in prog[1:]:
-                print(f'\t{str(c.T)}')
-            return False
-        
-        # and check that each argument is of the correct type
-        for i, (arg_type, given) in enumerate(zip(prog[0].T[1], prog[1:])):
-            if arg_type != given.T:
-                print(f'Incorrect argument #{i} to f{str(prog[0].T)}.')
-                print(f'\tExpected {str(arg_type)}. Received {str(given.T)}')
-                return False
+        # check that we have the correct arguments if there are multiple
+        if isinstance(func_type.T_in, TupleType):
+            correct_num_args = len(func_type.T_in)
+            given_num_args = len(arg_types)
+            if correct_num_args != given_num_args:
+                print(f'Incorrect number of arguments to {str(func_type)}. Received:')
+                for t in arg_types:
+                    print('\t', t)
 
-        # if we pass all of those checks, then this subtree returns the return type
-        # of the node
-        prog.T = prog[0].T[1]
-        return True
+                return False, []
 
+            for i in range(correct_num_args):
+                if func_type.T_in[i] != arg_types[i]:
+                    print(f'Incorrect argument #{i} to {str(func_type)}.')
+                    print(f'\tExpected {str(func_type.T_in[i])}. Received {str(arg_types[i])}')
+                    return False, []
+        # if it's a single argument, check that it matches
+        else:
+            if len(arg_types) != 1:
+                print(f'Incorrect number of arguments to {(func_type)}. Received:')
+                for t in arg_types:
+                    print('\t', t)
+
+                return False, []
+            if func_type.T_in != arg_types[0]:
+                    print(f'Incorrect argument to {str(func_type)}.')
+                    print(f'\tExpected {str(func_type.T_in)}. Received {str(arg_types[0])}')
+                    return False, []
+
+        return_type = func_type.T_out
+        return True, [return_type, child_types]
+
+    # if it's not a string or an list, then it's a primitive
     else:
-        print('[type_check] failed for program', prog)
+        return True, get_type_of_primitive(x)
 
 
 ###############################################################################
@@ -167,7 +180,7 @@ class Primitive:
     def __str__(self):
         return self.name
 
-class FuncConstructor(Primitive):
+class FuncCreator(Primitive):
     def __init__(self, name, T, f):
         self.name = name
         self.T = T
@@ -176,18 +189,10 @@ class FuncConstructor(Primitive):
     def __call__(self, *args):
         return self.f(*args)
 
-class IntConstructor(Primitive):
-    def __init__(self, val):
-        self.name = str(val)
-        self.val = int(val)
-        self.T = Int_T
-
-    def __call__(self):
-        return self.val
 
 typed_env = {
-   '+': FuncConstructor('+', FuncType((Int_T, Int_T), Int_T), op.add),
-   '-': FuncConstructor('-', FuncType((Int_T, Int_T), Int_T), op.sub)
+   '+': FuncCreator('+', FuncType((int, int), int), op.add),
+   '-': FuncCreator('-', FuncType((int, int), int), op.sub)
 }
 
 ###############################################################################

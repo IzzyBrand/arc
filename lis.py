@@ -6,7 +6,6 @@ Izzy Brand, 2020
 
 from __future__ import division
 from copy import deepcopy
-import operator as op
 import numpy as np
 import sys
 from arc_lisp_env import extended_env
@@ -15,15 +14,15 @@ from type_system import typed_env, type_check
 ################ Parsing: parse, tokenize, and read_from_tokens
 
 def parse(program):
-    "Read a Scheme expression from a string."
+    # Read a Scheme expression from a string.
     return read_from_tokens(tokenize(program))
 
 def tokenize(s):
-    "Convert a string into a list of tokens."
+    # Convert a string into a list of tokens.
     return s.replace('(',' ( ').replace(')',' ) ').split()
 
 def read_from_tokens(tokens):
-    "Read an expression from a sequence of tokens."
+    # Read an expression from a sequence of tokens.
     if len(tokens) == 0:
         raise SyntaxError('unexpected EOF while reading')
     token = tokens.pop(0)
@@ -39,32 +38,17 @@ def read_from_tokens(tokens):
         return atom(token)
 
 def atom(token):
-    "Numbers become numbers; every other token is a ."
-    try:
-        return int(token)
-    except ValueError:
-        return token
+    try: return int(token)
+    except ValueError: return token
 
 ################ Environments
 
-def standard_env():
-    "An environment with some Scheme standard procedures."
-    env = Env()
-    env.update({
-        '+':op.add, '-':op.sub, '*':op.mul, '/':op.truediv,
-        '>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '==':op.eq,
-    })
-    return env
-
 class Env(dict):
-    "An environment: a dict of {'var':val} pairs, with an outer Env."
-    def __init__(self, parms=(), args=(), outer=None):
-        self.update(zip(parms, args))
+    def __init__(self, dictionary, outer=None):
+        self.update(dictionary)
         self.outer = outer
 
     def find(self, var):
-        # print('find', var, self)
-        "Find the innermost Env where var appears."
         if (var in self):
             return self
         elif self.outer is not None:
@@ -79,8 +63,7 @@ class Env(dict):
     #     return str([(str(k), str(v)) for k,v in zip(self.keys(), self.values())])
 
 
-global_env = standard_env()
-global_env.update(extended_env)
+global_env = Env(extended_env)
 
 
 ################ Interaction: A REPL
@@ -120,7 +103,8 @@ class Procedure(object):
         self.func_string=func_string
         self.parms, self.body, self.env = parms, body, env
     def __call__(self, *args):
-        return eval(self.body, Env(self.parms, args, self.env))
+        new_env = Env(zip(self.parms, args), outer=self.env)
+        return eval(self.body, new_env)
     def __str__(self):
         return self.func_string
 
@@ -208,7 +192,7 @@ def eval(x, env=global_env, repl=False):
             sys.exit(1)
 
 
-def eval_file(filename, env = global_env, repl = False, display = False):
+def eval_file(filename, env=global_env, repl = False, display = False):
     f = open(filename, 'r')
     for line in f:
         if line[0] == "(":
@@ -219,7 +203,6 @@ def eval_file(filename, env = global_env, repl = False, display = False):
                 print("Error on line: " + line)
 
 if __name__ == '__main__':
-    env = Env()
-    env.update(typed_env)
+    env = Env(typed_env)
 
     repl(env=env)

@@ -59,8 +59,9 @@ class Env(dict):
     def get(self, var):
         return self[var] if (var in self) else (self.outer.get(var) if self.outer is not None else var)
 
-    # def __str__(self):
-    #     return str([(str(k), str(v)) for k,v in zip(self.keys(), self.values())])
+    def __str__(self):
+        return '\n'.join([f'{str(k)}:\t{str(v)}' for k,v \
+            in zip(self.keys(), self.values())])
 
 
 global_env = Env(extended_env)
@@ -204,5 +205,5 @@ def eval_file(filename, env=global_env, repl = False, display = False):
 
 if __name__ == '__main__':
     env = Env(typed_env)
-
+    print(env)
     repl(env=env)

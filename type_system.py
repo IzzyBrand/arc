@@ -2,9 +2,14 @@ import operator as op
 ###############################################################################
 # Types
 ###############################################################################
+# NOTE(izzy): We could simply pass around the string representation of a type,
+# but for type_check (when we want to ensure that the types of a program are
+# consistent, ie. that the output type of a function matches the input type of
+# the next function), we would have to parse the string representation of
+# higher-order types. For this reason we implement the `Type` class
 
 class Type:
-    """ Base type for things like numbers and arrays
+    """ Base type
     """
     def __init__(self, T):
         self.T = T
@@ -30,19 +35,6 @@ class TupleType(Type):
     def __getitem__(self, item):
         return tuple.__getitem__(self.T, item)
 
-
-class ArrayType(Type):
-    """ Describes the type of an array or list of items.
-
-    Extends:
-        Type
-    """
-    def __init__(self, T):
-        super(ArrayType, self).__init__(T)
-
-    def __str__(self):
-        return f"ArrayOf{str(self.T)}"
-
 class FuncType(Type):
     """ Describes the type of a function. Functions with multiple inputs or
     multiples outputs use the TupleType to wrap the inputs and outputs
@@ -62,6 +54,18 @@ class FuncType(Type):
     def __str__(self):
         return f"{str(self.T_in)} -> {str(self.T_out)}"
 
+class ArrayType(Type):
+    """ Describes the type of an array or list of items.
+
+    Extends:
+        Type
+    """
+    def __init__(self, T):
+        super(ArrayType, self).__init__(T)
+
+    def __str__(self):
+        return f"ArrayOf{str(self.T)}"
+
 class TemplateType(Type):
     """ Some functions can handle multiple types. For example map has a return
     type which depends on the function being mapped. This template type is for
@@ -75,11 +79,6 @@ class TemplateType(Type):
 
     def __str__(self):
         return f"<{self.T}>"
-
-Int_T = Type("Int")
-Color_T = Type("Color")
-Bool_T = Type("Bool")
-
 
 ###############################################################################
 # type_check
@@ -104,8 +103,15 @@ def type_check(x, env):
     if isinstance(x, str):
         dereferenced_x = env.find(x)[x]
         return type_check(dereferenced_x, env)
-
-    elif isinstance(x, list):
+    # if it's a primitive
+    elif isinstance(x, Primitive):
+        return True, x.T, x.T
+    # if it's none of the above and not a list, then it's an "unwrapped primitive."
+    elif not isinstance(x, list):
+        return True, type(x), type(x)
+    # if it's a list, then we have to recur, and check that the arguments
+    # match up to the function call
+    else:
         # type check the node and the children. fail if they fail
         child_types = []
         type_tree = []
@@ -137,7 +143,7 @@ def type_check(x, env):
             correct_num_args = len(func_type.T_in)
             given_num_args = len(arg_types)
             if correct_num_args != given_num_args:
-                print(f'Incorrect number of arguments to {str(func_type)}. Received:')
+                print(f'Incorrect number of arguments to {x[0]}: {str(func_type)}. Received:')
                 for t in arg_types:
                     print('\t', t)
 
@@ -145,32 +151,28 @@ def type_check(x, env):
 
             for i in range(correct_num_args):
                 if func_type.T_in[i] != arg_types[i]:
-                    print(f'Incorrect argument #{i} to {str(func_type)}.')
-                    print(f'\tExpected {str(func_type.T_in[i])}. Received {str(arg_types[i])}')
-                    return False, []
+                    print(f'Incorrect argument #{i} to {x[0]}: {str(func_type)}')
+                    print(f'\tExpected {str(func_type.T_in[i])}')
+                    print(f'\tReceived {str(arg_types[i])}')
+                    return False, None, []
         # if it's a single argument, check that it matches
         else:
             if len(arg_types) != 1:
-                print(f'Incorrect number of arguments to {(func_type)}. Received:')
+                print(f'Incorrect number of arguments to {str(func_type)}. Received:')
                 for t in arg_types:
                     print('\t', t)
 
                 return False, []
             if func_type.T_in != arg_types[0]:
-                    print(f'Incorrect argument to {str(func_type)}.')
-                    print(f'\tExpected {str(func_type.T_in)}. Received {str(arg_types[0])}')
+                    print(f'Incorrect argument to {x[0]}: {str(func_type)}')
+                    print(f'\tExpected {str(func_type.T_in)}')
+                    print(f'\tReceived {str(arg_types[0])}')
                     return False, None, []
 
         return_type = func_type.T_out
         return True, return_type, type_tree
 
-    # if it's a primitive
-    elif isinstance(x, Primitive):
-        return True, x.T, x.T
-    # if it's none, of the above, then it's an "unwrapped primitive."
-    # NOTE(izzy): at this point "int" is the only unwrapped primitive
-    else:
-        return True, type(x), type(x)
+
 
 
 ###############################################################################
@@ -188,32 +190,39 @@ class Primitive:
     def __str__(self):
         return self.name
 
+typed_env = {}
+
 class FuncCreator(Primitive):
-    def __init__(self, name, T, f):
+    def __init__(self, name, T, f, env=typed_env):
         self.name = name
         self.T = T
         self.f = f
 
+        if env is not None:
+            env[self.name] = self
+
     def __call__(self, *args):
         return self.f(*args)
 
+# create the default environment by adding symbols using FuncCreator
+FuncCreator('+', FuncType((int, int), int), op.add)
+FuncCreator('-', FuncType((int, int), int), op.sub)
+FuncCreator('*', FuncType((int, int), int), op.mul)
+FuncCreator('>', FuncType((int, int), bool), op.gt)
+FuncCreator('>=', FuncType((int, int), bool), op.ge)
+FuncCreator('==', FuncType((int, int), bool), op.eq)
 
-typed_env = {
-   '+': FuncCreator('+', FuncType((int, int), int), op.add),
-   '-': FuncCreator('-', FuncType((int, int), int), op.sub)
-}
 
 ###############################################################################
 # Example
 ###############################################################################
 
-
 if __name__ == '__main__':
+    Color_T = Type("Color")
     colorarray_T = ArrayType(Color_T)
-    l_t = Type("List")
 
     # example of a function that counts the number of pixels of a certain color
-    colorcount_T = FuncType((colorarray_T, Color_T), Int_T)
+    colorcount_T = FuncType((colorarray_T, Color_T), int)
     print("colorcount:", colorcount_T)
 
     # example of the type of map using a template type

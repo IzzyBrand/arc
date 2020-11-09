@@ -2,15 +2,18 @@
 
 Izzy Brand, 2020
 """
-## (c) Peter Norvig, 2010-16; See http://norvig.com/lispy.html
+## Inspired by Peter Norvig, 2010-16; See http://norvig.com/lispy.html
 
 from __future__ import division
 from copy import deepcopy
 import operator as op
 import numpy as np
+import sys
+
 from arc_lisp_env import extended_env
 from ast import AST
-import sys
+from type_system import typed_env, IntConstructor
+from another_type_check import type_check
 
 ################ Parsing: parse, tokenize, and read_from_tokens
 
@@ -40,7 +43,7 @@ def read_from_tokens(tokens):
 
 def atom(token):
     "Numbers become numbers; every other token is a ."
-    try: return int(token)
+    try: return IntConstructor(token)
     except ValueError:
         return token
 
@@ -49,34 +52,9 @@ def atom(token):
 def standard_env():
     "An environment with some Scheme standard procedures."
     env = Env()
-    # NOTE(izzy): keep the top-level env small
-    # env.update(vars(math)) # sin, cos, sqrt, pi, ...
     env.update({
         '+':op.add, '-':op.sub, '*':op.mul, '/':op.truediv,
         '>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '==':op.eq,
-
-        # NOTE(izzy): keep the language small. we can add these as needed
-        # 'abs':     abs,
-        # 'append':  op.add,
-        # 'apply':   apply,
-        # 'begin':   lambda *x: x[-1],
-        # 'car':     lambda x: x[0],
-        # 'cdr':     lambda x: x[1:],
-        # 'cons':    lambda x,y: [x] + y,
-        # 'eq?':     op.is_,
-        # 'equal?':  op.eq,
-        # 'length':  len,
-        # 'list':    lambda *x: list(x),
-        # 'list?':   lambda x: isinstance(x,list),
-        # 'map':     map,
-        # 'max':     max,
-        # 'min':     min,
-        # 'not':     op.not_,
-        # 'null?':   lambda x: x == [],
-        # 'number?': lambda x: isinstance(x, Number),
-        # 'procedure?': callable,
-        # 'round':   round,
-        # 'symbol?': lambda x: isinstance(x, Symbol),
     })
     return env
 
@@ -109,7 +87,7 @@ global_env.update(extended_env)
 
 ################ Interaction: A REPL
 
-def repl(prompt='lis.py> '):
+def repl(prompt='lis.py> ', env=global_env):
     "A prompt-read-eval-print loop."
 
     for file in sys.argv[1:]:
@@ -119,7 +97,11 @@ def repl(prompt='lis.py> '):
         inp = input(prompt)
         if inp == "quit":
             break
-        val = eval(parse(inp), repl=False)
+        ast = parse(inp)
+        print(ast)
+        pass_type_check, type_tree = type_check(ast, env)
+        print(f'Type check? {pass_type_check}\tType {str(type_tree[0])}')
+        val = eval(ast, repl=False, env=env)
         if val is not None:
             print(lispstr(val))
 
@@ -149,7 +131,7 @@ def eval(x, env=global_env, repl=False):
 
     # print('Eval', x)
     # NOTE(izzy): all good
-    if isinstance(x, Symbol):      # variable reference
+    if isinstance(x, str):      # variable reference
         if repl: ans =  env.get(x)
         else: ans =  env.find(x)[x]
         return ans
@@ -237,4 +219,7 @@ def eval_file(filename, env = global_env, repl = False, display = False):
                 print("Error on line: " + line)
 
 if __name__ == '__main__':
-    repl()
+    env = Env()
+    env.update(typed_env)
+
+    repl(env=env)

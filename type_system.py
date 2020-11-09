@@ -29,7 +29,7 @@ class TupleType(Type):
         return len(self.T)
     def __getitem__(self, item):
         return tuple.__getitem__(self.T, item)
-       
+
 
 class ArrayType(Type):
     """ Describes the type of an array or list of items.
@@ -84,15 +84,17 @@ Bool_T = Type("Bool")
 ###############################################################################
 # type_check
 ###############################################################################
-def get_type_of_primitive(x):
-    return x.T if isinstance(x, Primitive) else type(x)
-
 def type_check(x, env):
-    """ Computes the type of this tree and all of it's children.
-    
+    """ Type check the program in the environment, and compute the return type.
+
+    Arguments:
+        x {any} -- the program (abstract syntax tree) to be typechecked
+        env {Env} -- the environment in which the program is evaluated
+
     Returns:
-        bool -- False if typecheck fails in this tree or the children. 
-                True otherwise.
+        Bool -- True or False, does the program typecheck
+        Type -- The return type of running the program. None if fail
+        List -- A nested list of types with the same structure as the AST
     """
 
     # NOTE(izzy) We might need to allow things other than FuncType to have
@@ -106,27 +108,29 @@ def type_check(x, env):
     elif isinstance(x, list):
         # type check the node and the children. fail if they fail
         child_types = []
+        type_tree = []
         for child in x:
-            passed_type_check, child_type = type_check(child, env)
+            passed_type_check, child_type, child_type_tree = type_check(child, env)
             if passed_type_check:
                 child_types.append(child_type)
+                type_tree.append(child_type_tree)
             else:
-                return False, []
+                return False, None, []
 
         func_type = child_types[0]
         arg_types = child_types[1:]
         # if there are no children, then the node is the type of this tree:
         if len(arg_types) == 0:
-            return True, func_type
+            return True, func_type, func_type
 
         # if we have children, then they are the arguments to the node
-        
+
         # check that the node is a FuncType, and error if not
         if not isinstance(func_type, FuncType):
             print(f'{str(func_type)} does not accept arguments. Given:')
             for t in arg_types:
                 print('\t', t)
-            return False, []
+            return False, None, []
 
         # check that we have the correct arguments if there are multiple
         if isinstance(func_type.T_in, TupleType):
@@ -137,7 +141,7 @@ def type_check(x, env):
                 for t in arg_types:
                     print('\t', t)
 
-                return False, []
+                return False, None, []
 
             for i in range(correct_num_args):
                 if func_type.T_in[i] != arg_types[i]:
@@ -155,14 +159,18 @@ def type_check(x, env):
             if func_type.T_in != arg_types[0]:
                     print(f'Incorrect argument to {str(func_type)}.')
                     print(f'\tExpected {str(func_type.T_in)}. Received {str(arg_types[0])}')
-                    return False, []
+                    return False, None, []
 
         return_type = func_type.T_out
-        return True, [return_type, child_types]
+        return True, return_type, type_tree
 
-    # if it's not a string or an list, then it's a primitive
+    # if it's a primitive
+    elif isinstance(x, Primitive):
+        return True, x.T, x.T
+    # if it's none, of the above, then it's an "unwrapped primitive."
+    # NOTE(izzy): at this point "int" is the only unwrapped primitive
     else:
-        return True, get_type_of_primitive(x)
+        return True, type(x), type(x)
 
 
 ###############################################################################

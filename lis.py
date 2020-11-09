@@ -95,12 +95,13 @@ def repl(prompt='lis.py> ', env=global_env):
         inp = input(prompt)
         if inp == "quit":
             break
-        prog = parse(inp)
-        print(prog)
-        pass_type_check, type_tree = type_check(prog, env)
-        print(f'Type check? {pass_type_check}\tType {type_tree}')
+        x = parse(inp)
+
+        pass_type_check, return_type, type_tree = type_check(x, env)
+        print(f'Type check? {pass_type_check}\tType {return_type}')
+
         if pass_type_check:
-            val = eval(prog, repl=False, env=env)
+            val = eval(x, repl=False, env=env)
             if val is not None:
                 print(lispstr(val))
 

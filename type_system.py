@@ -36,24 +36,6 @@ class TupleType(Type):
     def __getitem__(self, item):
         return tuple.__getitem__(self.T, item)
 
-class OptionType(Type):
-    """ A type which can be one of a finite set of options
-
-    Extends:
-        Type
-    """
-    def __init__(self, *args):
-        super(OptionType, self).__init__(args)
-
-    def __str__(self):
-        return f"({' or '.join(str(t) for t in self.T)})"
-
-    # make sure length and indexing still work
-    def __len__(self):
-        return len(self.T)
-    def __getitem__(self, item):
-        return tuple.__getitem__(self.T, item)
-
 class FuncType(Type):
     """ Describes the type of a function. Functions with multiple inputs or
     multiples outputs use the TupleType to wrap the inputs and outputs
@@ -85,6 +67,25 @@ class ArrayType(Type):
     def __str__(self):
         return f"ArrayOf{str(self.T)}"
 
+class OptionType(Type):
+    """ Some functions can handle several of a finite set of types. For
+    example, + works with both ints and arrays, but not functions
+
+    Extends:
+        Type
+    """
+    def __init__(self, *args):
+        super(OptionType, self).__init__(args)
+
+    def __str__(self):
+        return f"({' or '.join(str(t) for t in self.T)})"
+
+    # make sure length and indexing still work
+    def __len__(self):
+        return len(self.T)
+    def __getitem__(self, item):
+        return tuple.__getitem__(self.T, item)
+
 class TemplateType(Type):
     """ Some functions can handle multiple types. For example map has a return
     type which depends on the function being mapped. This template type is for
@@ -98,6 +99,26 @@ class TemplateType(Type):
 
     def __str__(self):
         return f"<{self.T}>"
+
+
+class OptionTemplateType(TemplateType):
+    """ Ok, we're getting complicated here, but bear with me. Templated
+    functions are nice, but notall  templated functions can accept any
+    argument types. For example, while "map" is a pure templated function, in
+    the sense that it can work with any arguments that match the type template
+    "+" can add arrays or ints, but not functions. So the OptionTemplateType
+    is a TemplateType which only allows a finite set of Types to match the
+    template.
+
+    Extends:
+        TemplateType
+    """
+    def __init__(self, T, options):
+        self.T = T
+        self.options = options
+
+    def __str__(self):
+        return f"<{self.T}>: ({' or '.join(str(t) for t in self.options)})"
 
 ###############################################################################
 # type_check
@@ -170,7 +191,7 @@ def type_check(x, env):
         else:
             proc_arg_types = (proc_type.T_in,)
 
-        # check that we have the correct arguments if there are multiple
+        # check that we have the correct number of arguments
         correct_num_args = len(proc_arg_types)
         given_num_args = len(arg_types)
         if correct_num_args != given_num_args:
@@ -184,19 +205,32 @@ def type_check(x, env):
         # when we find out what type each TemplateType should be, we can save it
         # in the dictionary and make sure it is consistent everywhere
         local_type_env = {}
+
+        # and check that each of the arguments match up
         for i, (required_arg_type, given_arg_type) in enumerate(zip(proc_arg_types, arg_types)):
 
             # if the procedure has template type
-            if isinstance(proc_arg_types[i], TemplateType):
+            if isinstance(required_arg_type, TemplateType):
+
+
                 # first we check if the TemplateType has already been set
                 # by one of the previous arguments. if so, type check normally
                 if required_arg_type in local_type_env:
                     required_arg_type = local_type_env[required_arg_type]
                 # if the template type has not been set in the local type env,
-                # then we can set it now. no more type checking needs to be done
-                # for this argument
+                # then we can set it now.
                 else:
-                    local_type_env[proc_arg_types[i]] = arg_types[i]
+                    # if the TemplateType specifies a set of options, we need
+                    # to make sure that the given type is one of those options
+                    if isinstance(required_arg_type, OptionTemplateType):
+                        if given_arg_type not in required_arg_type.options:
+                            print(f'Incorrect argument #{i} to {x[0]}: {str(proc_type)}')
+                            print(f'\tExpected {str(required_arg_type)}')
+                            print(f'\tReceived {str(given_arg_type)}')
+                            return False, None, []
+
+                    # set the type in the environment
+                    local_type_env[required_arg_type] = given_arg_type
                     continue
 
 
@@ -251,18 +285,22 @@ class FuncCreator(Primitive):
     def __call__(self, *args):
         return self.f(*args)
 
-T1 = TemplateType('T1')
+# this is a template type that only accepts ints or array
+T1 = OptionTemplateType('T2', (int, np.ndarray))
 
 # create the default environment by adding symbols using FuncCreator
 
-# integer arithmetic is easy
+# arithmetic is easier
 FuncCreator('+', FuncType((T1, T1), T1), op.add)
-FuncCreator('-', FuncType((int, int), int), op.sub)
-FuncCreator('*', FuncType((int, int), int), op.mul)
-FuncCreator('sq', FuncType(int, int), np.square)
-FuncCreator('>', FuncType((int, int), bool), op.gt)
-FuncCreator('>=', FuncType((int, int), bool), op.ge)
-FuncCreator('==', FuncType((int, int), bool), op.eq)
+FuncCreator('-', FuncType((T1, T1), T1), op.sub)
+FuncCreator('*', FuncType((T1, T1), T1), op.mul)
+FuncCreator('sq', FuncType(T1, T1), np.square)
+
+# logic is harder, because in the case of arrays, we get arrays,
+# but in the case of ints we get bools.
+FuncCreator('>', FuncType((T1, T1), bool), op.gt)
+FuncCreator('>=', FuncType((T1, T1), bool), op.ge)
+FuncCreator('==', FuncType((T1, T1), bool), op.eq)
 
 # Array modification is much harder
 # NOTE(izzy): we need to switch these to ArrayType, because some arrays are

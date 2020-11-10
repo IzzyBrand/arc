@@ -1,3 +1,4 @@
+import numpy as np
 import operator as op
 ###############################################################################
 # Types
@@ -28,6 +29,24 @@ class TupleType(Type):
 
     def __str__(self):
         return f"({', '.join(str(t) for t in self.T)})"
+
+    # make sure length and indexing still work
+    def __len__(self):
+        return len(self.T)
+    def __getitem__(self, item):
+        return tuple.__getitem__(self.T, item)
+
+class OptionType(Type):
+    """ A type which can be one of a finite set of options
+
+    Extends:
+        Type
+    """
+    def __init__(self, *args):
+        super(OptionType, self).__init__(args)
+
+    def __str__(self):
+        return f"({' or '.join(str(t) for t in self.T)})"
 
     # make sure length and indexing still work
     def __len__(self):
@@ -123,53 +142,81 @@ def type_check(x, env):
             else:
                 return False, None, []
 
-        func_type = child_types[0]
+        proc_type = child_types[0]
         arg_types = child_types[1:]
-        # if there are no children, then the node is the type of this tree:
-        if len(arg_types) == 0:
-            return True, func_type, func_type
 
-        # if we have children, then they are the arguments to the node
+        # if there are no children, then the node is the type of this tree
+        if len(arg_types) == 0:
+            return True, proc_type, proc_type
+
+        # TODO(izzy): if the procedure, x[0], has multiple type options, we
+        # need to check if the arguments are consistent with any of those
+        # options
+        #
+        # if isinstance(proc_type, OptionType):
+        #     for possible_proc_type in proc_type.T:
+        #         ...
 
         # check that the node is a FuncType, and error if not
-        if not isinstance(func_type, FuncType):
-            print(f'{str(func_type)} does not accept arguments. Given:')
+        if not isinstance(proc_type, FuncType):
+            print(f'{str(proc_type)} does not accept arguments. Given:')
             for t in arg_types:
                 print('\t', t)
             return False, None, []
 
-        # check that we have the correct arguments if there are multiple
-        if isinstance(func_type.T_in, TupleType):
-            correct_num_args = len(func_type.T_in)
-            given_num_args = len(arg_types)
-            if correct_num_args != given_num_args:
-                print(f'Incorrect number of arguments to {x[0]}: {str(func_type)}. Received:')
-                for t in arg_types:
-                    print('\t', t)
+        # get a tuple of the arguments types of the procedure
+        if isinstance(proc_type.T_in, TupleType):
+            proc_arg_types = proc_type.T_in
+        else:
+            proc_arg_types = (proc_type.T_in,)
 
+        # check that we have the correct arguments if there are multiple
+        correct_num_args = len(proc_arg_types)
+        given_num_args = len(arg_types)
+        if correct_num_args != given_num_args:
+            print(f'Incorrect number of arguments to {x[0]}: {str(proc_type)}. Received:')
+            for t in arg_types:
+                print('\t', t)
+
+            return False, None, []
+
+        # the local type environment stores a dict {TemplateType: Type} so that
+        # when we find out what type each TemplateType should be, we can save it
+        # in the dictionary and make sure it is consistent everywhere
+        local_type_env = {}
+        for i, (required_arg_type, given_arg_type) in enumerate(zip(proc_arg_types, arg_types)):
+
+            # if the procedure has template type
+            if isinstance(proc_arg_types[i], TemplateType):
+                # first we check if the TemplateType has already been set
+                # by one of the previous arguments. if so, type check normally
+                if required_arg_type in local_type_env:
+                    required_arg_type = local_type_env[required_arg_type]
+                # if the template type has not been set in the local type env,
+                # then we can set it now. no more type checking needs to be done
+                # for this argument
+                else:
+                    local_type_env[proc_arg_types[i]] = arg_types[i]
+                    continue
+
+
+            if required_arg_type != given_arg_type:
+                print(f'Incorrect argument #{i} to {x[0]}: {str(proc_type)}')
+                print(f'\tExpected {str(required_arg_type)}')
+                print(f'\tReceived {str(given_arg_type)}')
                 return False, None, []
 
-            for i in range(correct_num_args):
-                if func_type.T_in[i] != arg_types[i]:
-                    print(f'Incorrect argument #{i} to {x[0]}: {str(func_type)}')
-                    print(f'\tExpected {str(func_type.T_in[i])}')
-                    print(f'\tReceived {str(arg_types[i])}')
-                    return False, None, []
-        # if it's a single argument, check that it matches
+
+        # look up the return type in the local type env if needed
+        if isinstance(proc_type.T_out, TemplateType):
+            if proc_type.T_out in local_type_env:
+                return_type = local_type_env[proc_type.T_out]
+            else:
+                print(f'Unspecified TemplateType {str(proc_type.T_out)} returned from {str(proc_type)}.')
+                return False, None, []
+        # otherwise, it's simply specified by the function
         else:
-            if len(arg_types) != 1:
-                print(f'Incorrect number of arguments to {str(func_type)}. Received:')
-                for t in arg_types:
-                    print('\t', t)
-
-                return False, []
-            if func_type.T_in != arg_types[0]:
-                    print(f'Incorrect argument to {x[0]}: {str(func_type)}')
-                    print(f'\tExpected {str(func_type.T_in)}')
-                    print(f'\tReceived {str(arg_types[0])}')
-                    return False, None, []
-
-        return_type = func_type.T_out
+            return_type = proc_type.T_out
         return True, return_type, type_tree
 
 
@@ -190,7 +237,7 @@ class Primitive:
     def __str__(self):
         return self.name
 
-typed_env = {}
+typed_env = {'grid': np.zeros([3,3])}
 
 class FuncCreator(Primitive):
     def __init__(self, name, T, f, env=typed_env):
@@ -204,13 +251,27 @@ class FuncCreator(Primitive):
     def __call__(self, *args):
         return self.f(*args)
 
+T1 = TemplateType('T1')
+
 # create the default environment by adding symbols using FuncCreator
-FuncCreator('+', FuncType((int, int), int), op.add)
+
+# integer arithmetic is easy
+FuncCreator('+', FuncType((T1, T1), T1), op.add)
 FuncCreator('-', FuncType((int, int), int), op.sub)
 FuncCreator('*', FuncType((int, int), int), op.mul)
+FuncCreator('sq', FuncType(int, int), np.square)
 FuncCreator('>', FuncType((int, int), bool), op.gt)
 FuncCreator('>=', FuncType((int, int), bool), op.ge)
 FuncCreator('==', FuncType((int, int), bool), op.eq)
+
+# Array modification is much harder
+# NOTE(izzy): we need to switch these to ArrayType, because some arrays are
+# ints and others are bools, and they behave differently when used as slices
+FuncCreator('zeros_like', FuncType(np.ndarray, np.ndarray), np.zeros_like)
+FuncCreator('array_equal', FuncType((np.ndarray, np.ndarray), np.ndarray), op.eq)
+FuncCreator('array_to_slice', FuncType(np.ndarray, slice), lambda x: x)
+
+
 
 
 ###############################################################################

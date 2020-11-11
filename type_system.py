@@ -120,141 +120,6 @@ class OptionTemplateType(TemplateType):
     def __str__(self):
         return f"<{self.T}>: ({' or '.join(str(t) for t in self.options)})"
 
-###############################################################################
-# type_check
-###############################################################################
-def type_check(x, env):
-    """ Type check the program in the environment, and compute the return type.
-
-    Arguments:
-        x {any} -- the program (abstract syntax tree) to be typechecked
-        env {Env} -- the environment in which the program is evaluated
-
-    Returns:
-        Bool -- True or False, does the program typecheck
-        Type -- The return type of running the program. None if fail
-        List -- A nested list of types with the same structure as the AST
-    """
-
-    # NOTE(izzy) We might need to allow things other than FuncType to have
-    # children to allow array and tuple slicing?
-
-    # look up in the environment if it's a string
-    if isinstance(x, str):
-        dereferenced_x = env.find(x)[x]
-        return type_check(dereferenced_x, env)
-    # if it's a primitive
-    elif isinstance(x, Primitive):
-        return True, x.T, x.T
-    # if it's none of the above and not a list, then it's an "unwrapped primitive."
-    elif not isinstance(x, list):
-        return True, type(x), type(x)
-    # if it's a list, then we have to recur, and check that the arguments
-    # match up to the function call
-    else:
-        # type check the node and the children. fail if they fail
-        child_types = []
-        type_tree = []
-        for child in x:
-            passed_type_check, child_type, child_type_tree = type_check(child, env)
-            if passed_type_check:
-                child_types.append(child_type)
-                type_tree.append(child_type_tree)
-            else:
-                return False, None, []
-
-        proc_type = child_types[0]
-        arg_types = child_types[1:]
-
-        # if there are no children, then the node is the type of this tree
-        if len(arg_types) == 0:
-            return True, proc_type, proc_type
-
-        # TODO(izzy): if the procedure, x[0], has multiple type options, we
-        # need to check if the arguments are consistent with any of those
-        # options
-        #
-        # if isinstance(proc_type, OptionType):
-        #     for possible_proc_type in proc_type.T:
-        #         ...
-
-        # check that the node is a FuncType, and error if not
-        if not isinstance(proc_type, FuncType):
-            print(f'{str(proc_type)} does not accept arguments. Given:')
-            for t in arg_types:
-                print('\t', t)
-            return False, None, []
-
-        # get a tuple of the arguments types of the procedure
-        if isinstance(proc_type.T_in, TupleType):
-            proc_arg_types = proc_type.T_in
-        else:
-            proc_arg_types = (proc_type.T_in,)
-
-        # check that we have the correct number of arguments
-        correct_num_args = len(proc_arg_types)
-        given_num_args = len(arg_types)
-        if correct_num_args != given_num_args:
-            print(f'Incorrect number of arguments to {x[0]}: {str(proc_type)}. Received:')
-            for t in arg_types:
-                print('\t', t)
-
-            return False, None, []
-
-        # the local type environment stores a dict {TemplateType: Type} so that
-        # when we find out what type each TemplateType should be, we can save it
-        # in the dictionary and make sure it is consistent everywhere
-        local_type_env = {}
-
-        # and check that each of the arguments match up
-        for i, (required_arg_type, given_arg_type) in enumerate(zip(proc_arg_types, arg_types)):
-
-            # if the procedure has template type
-            if isinstance(required_arg_type, TemplateType):
-
-
-                # first we check if the TemplateType has already been set
-                # by one of the previous arguments. if so, type check normally
-                if required_arg_type in local_type_env:
-                    required_arg_type = local_type_env[required_arg_type]
-                # if the template type has not been set in the local type env,
-                # then we can set it now.
-                else:
-                    # if the TemplateType specifies a set of options, we need
-                    # to make sure that the given type is one of those options
-                    if isinstance(required_arg_type, OptionTemplateType):
-                        if given_arg_type not in required_arg_type.options:
-                            print(f'Incorrect argument #{i} to {x[0]}: {str(proc_type)}')
-                            print(f'\tExpected {str(required_arg_type)}')
-                            print(f'\tReceived {str(given_arg_type)}')
-                            return False, None, []
-
-                    # set the type in the environment
-                    local_type_env[required_arg_type] = given_arg_type
-                    continue
-
-
-            if required_arg_type != given_arg_type:
-                print(f'Incorrect argument #{i} to {x[0]}: {str(proc_type)}')
-                print(f'\tExpected {str(required_arg_type)}')
-                print(f'\tReceived {str(given_arg_type)}')
-                return False, None, []
-
-
-        # look up the return type in the local type env if needed
-        if isinstance(proc_type.T_out, TemplateType):
-            if proc_type.T_out in local_type_env:
-                return_type = local_type_env[proc_type.T_out]
-            else:
-                print(f'Unspecified TemplateType {str(proc_type.T_out)} returned from {str(proc_type)}.')
-                return False, None, []
-        # otherwise, it's simply specified by the function
-        else:
-            return_type = proc_type.T_out
-        return True, return_type, type_tree
-
-
-
 
 ###############################################################################
 # Primitives and Environment
@@ -286,14 +151,22 @@ class FuncCreator(Primitive):
         return self.f(*args)
 
 # this is a template type that only accepts ints or array
-T1 = OptionTemplateType('T2', (int, np.ndarray))
+T1 = OptionTemplateType('T1', (int, np.ndarray))
+
+# this is an OptionType that handles math between int and np.ndarray
+binary_math_operator_type = OptionType(
+    FuncType((int, int), int),
+    FuncType((np.ndarray, int), np.ndarray),
+    FuncType((int, np.ndarray), np.ndarray),
+    FuncType((np.ndarray, np.ndarray), np.ndarray)
+)
 
 # create the default environment by adding symbols using FuncCreator
 
 # arithmetic is easier
-FuncCreator('+', FuncType((T1, T1), T1), op.add)
-FuncCreator('-', FuncType((T1, T1), T1), op.sub)
-FuncCreator('*', FuncType((T1, T1), T1), op.mul)
+FuncCreator('+', binary_math_operator_type, op.add)
+FuncCreator('-', binary_math_operator_type, op.sub)
+FuncCreator('*', binary_math_operator_type, op.mul)
 FuncCreator('sq', FuncType(T1, T1), np.square)
 
 # logic is harder, because in the case of arrays, we get arrays,

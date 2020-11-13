@@ -16,16 +16,18 @@ class FuncCreator(Primitive):
     def __call__(self, *args):
         return self.f(*args)
 
-# this is a template type that only accepts ints or array
-Tif = OptionTemplateType('Tif', (int, bool))
-# T1 = OptionTemplateType('T1', (int, np.ndarray))
+T1 = TemplateType('T1')
+T_int = Type('int')
 
 # this is an OptionType that handles math between int and np.ndarray
 binary_math_operator_type = OptionType(
-    FuncType((int, int), int),
-    FuncType((ArrayType(int), int), ArrayType(int)),
-    FuncType((int, ArrayType(int)), ArrayType(int)),
-    FuncType((ArrayType(int), ArrayType(int)), ArrayType(int))
+    FuncType((T_int, T_int), T_int),
+    FuncType((Array1DType(T_int), T_int), Array1DType(T_int)),
+    FuncType((Array2DType(T_int), T_int), Array2DType(T_int)),
+    FuncType((T_int, Array1DType(T_int)), Array1DType(T_int)),
+    FuncType((T_int, Array2DType(T_int)), Array2DType(T_int)),
+    FuncType((Array1DType(T_int), Array1DType(T_int)), Array1DType(T_int)),
+    FuncType((Array2DType(T_int), Array2DType(T_int)), Array2DType(T_int))
 )
 
 # create the default environment by adding symbols using FuncCreator
@@ -34,6 +36,8 @@ binary_math_operator_type = OptionType(
 FuncCreator('+', binary_math_operator_type, op.add)
 FuncCreator('-', binary_math_operator_type, op.sub)
 FuncCreator('*', binary_math_operator_type, op.mul)
+
+FuncCreator('if', FuncType(bool, , op.mul)
 
 # FuncCreator('sq', FuncType(T1, T1), np.square)
 

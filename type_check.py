@@ -25,7 +25,8 @@ def type_check(x, env, print_type_error=True):
         return True, x.T, x.T
     # if it's none of the above and not a list, then it's an "unwrapped primitive."
     elif not isinstance(x, list):
-        return True, object_to_type(x), []
+        T = object_to_type(x)
+        return True, T, T
 
     # if it's a list, then we have been given an abstract syntax tree for a
     # for a program, so we need to type-check recursively
@@ -66,6 +67,7 @@ def type_check(x, env, print_type_error=True):
                         check_arguments_to_procedure(x[0],
                             possible_proc_type, arg_types, print_type_error=True)
 
+                    print(passed_type_check)
                     if passed_type_check:
                         return True, return_type, type_tree
 
@@ -93,6 +95,7 @@ def check_arguments_to_procedure(proc, proc_type, arg_types, print_type_error=Tr
 
     Returns:
         bool -- True if these are valid arguments to the procedure
+        Type -- The return type of the procedure
     """
     def debug_print(*s):
         if print_type_error: print(*s)
@@ -124,8 +127,6 @@ def check_arguments_to_procedure(proc, proc_type, arg_types, print_type_error=Tr
 
         # if the procedure has template type
         if isinstance(required_arg_type, TemplateType):
-
-
             # first we check if the TemplateType has already been set
             # by one of the previous arguments. if so, type check normally
             if required_arg_type in local_type_env:
@@ -136,7 +137,7 @@ def check_arguments_to_procedure(proc, proc_type, arg_types, print_type_error=Tr
                 # if the TemplateType specifies a set of options, we need
                 # to make sure that the given type is one of those options
                 if isinstance(required_arg_type, OptionTemplateType):
-                    if required_arg_type.accepts(given_arg_type):
+                    if not required_arg_type.accepts(given_arg_type):
                         debug_print(f'Incorrect argument #{i} to {proc}: {str(proc_type)}')
                         debug_print(f'\tExpected {str(required_arg_type)}')
                         debug_print(f'\tReceived {str(given_arg_type)}')
@@ -146,7 +147,8 @@ def check_arguments_to_procedure(proc, proc_type, arg_types, print_type_error=Tr
                 local_type_env[required_arg_type] = given_arg_type
                 continue
 
-        if required_arg_type.accepts(given_arg_type):
+        if not required_arg_type.accepts(given_arg_type):
+
             debug_print(f'Incorrect argument #{i} to {proc}: {str(proc_type)}')
             debug_print(f'\tExpected {str(required_arg_type)}')
             debug_print(f'\tReceived {str(given_arg_type)}')

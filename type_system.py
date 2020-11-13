@@ -39,14 +39,6 @@ class Type:
     def __str__(self):
         return self.T
 
-    # note that we override equality to compare types by their typestrings.
-    # if we don't do this we run into the following problem with python:
-    #
-    # >>> a = Foo(1)
-    # >>> b = Foo(1)
-    # >>> a == b
-    # False
-
     def accepts(self, other):
         """ When self if the specified argument type of the function, we need
         to check if that function will  accept an argument of Type other
@@ -57,17 +49,8 @@ class Type:
         Returns:
             bool -- True if other is a valid argument to self
         """
-        return isinstance(other, self.__class__)
-
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
-        else:
-            print('here')
-            return str(self) == str(other)
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
+        if not isinstance(other, self.__class__): return False
+        else: return str(self) == str(other)
 
 class TupleType(Type):
     """ Describes the type of a tuple of items
@@ -114,6 +97,10 @@ class ArrayType(Type):
     """
     def __init__(self, T):
         super(ArrayType, self).__init__(T)
+
+    def accepts(self, other):
+        if not isinstance(other, self.__class__): return False
+        else: return self.T.accepts(other.T)
 
     def __str__(self):
         return f"Array{str(self.T)}"

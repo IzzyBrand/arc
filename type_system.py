@@ -1,8 +1,29 @@
 import numpy as np
 import operator as op
-###############################################################################
-# Types
-###############################################################################
+
+class Primitive:
+    """ Primitives are our equivalent of python's object.
+
+    Primitives are used to create the top-level environment of the DSL, which
+    includes all the functions that are by-default available to the synthesis
+    engine. The reason we wrap functions in a Primitive class is because this
+    allows us to specify the Type of the object.
+
+    Attributes:
+        name {sting} -- the name of this primitive
+        T {Type} -- The type of this Primitive
+    """
+    def __init__(self, name, T):
+        self.name = name
+        self.T = T
+
+    def __call__(self):
+        return self
+
+    def __str__(self):
+        return self.name
+
+
 # NOTE(izzy): We could simply pass around the string representation of a type,
 # but for type_check (when we want to ensure that the types of a program are
 # consistent, ie. that the output type of a function matches the input type of
@@ -163,78 +184,6 @@ class OptionTemplateType(TemplateType):
     def __str__(self):
         return f"<{self.T}>: ({' or '.join(str(t) for t in self.options)})"
 
-
-###############################################################################
-# Primitives and Environment
-###############################################################################
-
-class Primitive:
-    def __init__(self, name, T):
-        self.name = name
-        self.T = T
-
-    def __call__(self):
-        return self
-
-    def __str__(self):
-        return self.name
-
-
-typed_env = {'igrid': np.random.randint(10, size=[3,3]),
-             'bgrid': np.random.randint(1, size=[3,3], dtype=bool)}
-
-class FuncCreator(Primitive):
-    def __init__(self, name, T, f, env=typed_env):
-        self.name = name
-        self.T = T
-        self.f = f
-
-        if env is not None:
-            env[self.name] = self
-
-    def __call__(self, *args):
-        return self.f(*args)
-
-# this is a template type that only accepts ints or array
-Tif = OptionTemplateType('Tif', (int, bool))
-# T1 = OptionTemplateType('T1', (int, np.ndarray))
-
-# this is an OptionType that handles math between int and np.ndarray
-binary_math_operator_type = OptionType(
-    FuncType((int, int), int),
-    FuncType((ArrayType(int), int), ArrayType(int)),
-    FuncType((int, ArrayType(int)), ArrayType(int)),
-    FuncType((ArrayType(int), ArrayType(int)), ArrayType(int))
-)
-
-# create the default environment by adding symbols using FuncCreator
-
-# arithmetic is easier
-FuncCreator('+', binary_math_operator_type, op.add)
-FuncCreator('-', binary_math_operator_type, op.sub)
-FuncCreator('*', binary_math_operator_type, op.mul)
-
-# FuncCreator('sq', FuncType(T1, T1), np.square)
-
-# logic is harder, because in the case of arrays, we get arrays,
-# but in the case of ints we get bools.
-# FuncCreator('>', FuncType((T1, T1), bool), op.gt)
-# FuncCreator('>=', FuncType((T1, T1), bool), op.ge)
-# FuncCreator('==', FuncType((T1, T1), bool), op.eq)
-
-# Array modification is much harder
-# NOTE(izzy): we need to switch these to ArrayType, because some arrays are
-# ints and others are bools, and they behave differently when used as slices
-# FuncCreator('zeros_like', FuncType(np.ndarray, np.ndarray), np.zeros_like)
-# FuncCreator('array_equal', FuncType((np.ndarray, np.ndarray), np.ndarray), op.eq)
-# FuncCreator('array_to_slice', FuncType(np.ndarray, slice), lambda x: x)
-
-
-
-
-###############################################################################
-# Example
-###############################################################################
 
 if __name__ == '__main__':
     Color_T = Type("Color")

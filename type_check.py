@@ -190,7 +190,6 @@ def object_to_type(x):
     else:
         # get a typestring for the object x
         typestring = object_to_typestring(x)
-        print(typestring, bool_types)
         # The uppercase "Type" function wraps this typestring in a Type object
         if typestring in int_types: return Type('int')
         elif typestring in bool_types: return Type('bool')

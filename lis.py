@@ -9,7 +9,7 @@ from copy import deepcopy
 import numpy as np
 import sys
 from arc_lisp_env import extended_env
-from type_system import typed_env
+from environment import typed_env
 from type_check import type_check
 
 ################ Parsing: parse, tokenize, and read_from_tokens
@@ -61,8 +61,8 @@ class Env(dict):
         return self[var] if (var in self) else (self.outer.get(var) if self.outer is not None else var)
 
     def __str__(self):
-        return '\n'.join([f'{str(k)}:\t{str(v)}' for k,v \
-            in zip(self.keys(), self.values())])
+        return '{'+',\t'.join([f'{str(k)}: {str(v)}' for k,v \
+            in zip(self.keys(), self.values())]) + '}'
 
 
 global_env = Env(extended_env)

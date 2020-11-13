@@ -18,6 +18,36 @@ class Type:
     def __str__(self):
         return self.T
 
+    # note that we override equality to compare types by their typestrings.
+    # if we don't do this we run into the following problem with python:
+    #
+    # >>> a = Foo(1)
+    # >>> b = Foo(1)
+    # >>> a == b
+    # False
+
+    def accepts(self, other):
+        """ When self if the specified argument type of the function, we need
+        to check if that function will  accept an argument of Type other
+
+        Arguments:
+            other {Type} -- the type of the given argument
+
+        Returns:
+            bool -- True if other is a valid argument to self
+        """
+        return isinstance(other, self.__class__)
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        else:
+            print('here')
+            return str(self) == str(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 class TupleType(Type):
     """ Describes the type of a tuple of items
 
@@ -65,7 +95,15 @@ class ArrayType(Type):
         super(ArrayType, self).__init__(T)
 
     def __str__(self):
-        return f"ArrayOf{str(self.T)}"
+        return f"Array{str(self.T)}"
+
+class Array1DType(ArrayType):
+    def __str__(self):
+        return f"Array1D{str(self.T)}"
+
+class Array2DType(ArrayType):
+    def __str__(self):
+        return f"Array2D{str(self.T)}"
 
 class OptionType(Type):
     """ Some functions can handle several of a finite set of types. For
@@ -76,6 +114,11 @@ class OptionType(Type):
     """
     def __init__(self, *args):
         super(OptionType, self).__init__(args)
+
+    def accepts(self, other):
+        a = False
+        for t in self.T: a = a or t.accepts(other)
+        return a
 
     def __str__(self):
         return f"({' or '.join(str(t) for t in self.T)})"
@@ -136,7 +179,9 @@ class Primitive:
     def __str__(self):
         return self.name
 
-typed_env = {'grid': np.zeros([3,3])}
+
+typed_env = {'igrid': np.random.randint(10, size=[3,3]),
+             'bgrid': np.random.randint(1, size=[3,3], dtype=bool)}
 
 class FuncCreator(Primitive):
     def __init__(self, name, T, f, env=typed_env):
@@ -151,14 +196,15 @@ class FuncCreator(Primitive):
         return self.f(*args)
 
 # this is a template type that only accepts ints or array
-T1 = OptionTemplateType('T1', (int, np.ndarray))
+Tif = OptionTemplateType('Tif', (int, bool))
+# T1 = OptionTemplateType('T1', (int, np.ndarray))
 
 # this is an OptionType that handles math between int and np.ndarray
 binary_math_operator_type = OptionType(
     FuncType((int, int), int),
-    FuncType((np.ndarray, int), np.ndarray),
-    FuncType((int, np.ndarray), np.ndarray),
-    FuncType((np.ndarray, np.ndarray), np.ndarray)
+    FuncType((ArrayType(int), int), ArrayType(int)),
+    FuncType((int, ArrayType(int)), ArrayType(int)),
+    FuncType((ArrayType(int), ArrayType(int)), ArrayType(int))
 )
 
 # create the default environment by adding symbols using FuncCreator
@@ -167,20 +213,21 @@ binary_math_operator_type = OptionType(
 FuncCreator('+', binary_math_operator_type, op.add)
 FuncCreator('-', binary_math_operator_type, op.sub)
 FuncCreator('*', binary_math_operator_type, op.mul)
-FuncCreator('sq', FuncType(T1, T1), np.square)
+
+# FuncCreator('sq', FuncType(T1, T1), np.square)
 
 # logic is harder, because in the case of arrays, we get arrays,
 # but in the case of ints we get bools.
-FuncCreator('>', FuncType((T1, T1), bool), op.gt)
-FuncCreator('>=', FuncType((T1, T1), bool), op.ge)
-FuncCreator('==', FuncType((T1, T1), bool), op.eq)
+# FuncCreator('>', FuncType((T1, T1), bool), op.gt)
+# FuncCreator('>=', FuncType((T1, T1), bool), op.ge)
+# FuncCreator('==', FuncType((T1, T1), bool), op.eq)
 
 # Array modification is much harder
 # NOTE(izzy): we need to switch these to ArrayType, because some arrays are
 # ints and others are bools, and they behave differently when used as slices
-FuncCreator('zeros_like', FuncType(np.ndarray, np.ndarray), np.zeros_like)
-FuncCreator('array_equal', FuncType((np.ndarray, np.ndarray), np.ndarray), op.eq)
-FuncCreator('array_to_slice', FuncType(np.ndarray, slice), lambda x: x)
+# FuncCreator('zeros_like', FuncType(np.ndarray, np.ndarray), np.zeros_like)
+# FuncCreator('array_equal', FuncType((np.ndarray, np.ndarray), np.ndarray), op.eq)
+# FuncCreator('array_to_slice', FuncType(np.ndarray, slice), lambda x: x)
 
 
 

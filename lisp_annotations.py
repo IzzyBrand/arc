@@ -73,8 +73,6 @@ func1_46442a0e =\
 """
 
 
-
-
 demo_programs = {
     '25d8a9c8': [func1_25d8a9c8],
     '99b1bc43': [func1_99b1bc43],

@@ -65,9 +65,8 @@ def type_check(x, env, print_type_error=True):
                 if isinstance(possible_proc_type, FuncType):
                     passed_type_check, return_type =\
                         check_arguments_to_procedure(x[0],
-                            possible_proc_type, arg_types, print_type_error=True)
+                            possible_proc_type, arg_types, print_type_error=print_type_error)
 
-                    print(passed_type_check)
                     if passed_type_check:
                         return True, return_type, type_tree
 

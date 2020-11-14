@@ -1,8 +1,10 @@
 from type_system import *
 
-typed_env = {'igrid': np.random.randint(10, size=[3,3]),
-             'bgrid': np.random.randint(1, size=[3,3], dtype=bool)}
+def make_slice(start, end):
+    if end == 0: end = None
+    return slice(start, end)
 
+typed_env = {}
 
 class FuncCreator(Primitive):
     def __init__(self, name, T, f, env=typed_env):
@@ -18,6 +20,8 @@ class FuncCreator(Primitive):
 
 T1 = TemplateType('T1')
 T_int = Type('int')
+T_bool = Type('bool')
+T_slice = Type('slice')
 
 # this is an OptionType that handles math between int and np.ndarray
 binary_math_operator_type = OptionType(
@@ -30,22 +34,42 @@ binary_math_operator_type = OptionType(
     FuncType((Array2DType(T_int), Array2DType(T_int)), Array2DType(T_int))
 )
 
+binary_math_comparator_type = OptionType(
+    FuncType((T_int, T_int), T_bool),
+    FuncType((Array1DType(T_int), T_int), Array1DType(T_bool)),
+    FuncType((Array2DType(T_int), T_int), Array2DType(T_bool)),
+    FuncType((T_int, Array1DType(T_int)), Array1DType(T_bool)),
+    FuncType((T_int, Array2DType(T_int)), Array2DType(T_bool)),
+    FuncType((Array1DType(T_int), Array1DType(T_int)), Array1DType(T_bool)),
+    FuncType((Array2DType(T_int), Array2DType(T_int)), Array2DType(T_bool))
+)
+
+index_type = OptionType(
+    FuncType((ArrayType(T1), T_slice), ArrayType(T1)),
+    FuncType((Array1DType(T1), int), T1),
+    FuncType((Array2DType(T1), int), Array1DType(T1))
+)
+
+
 # create the default environment by adding symbols using FuncCreator
 
-# arithmetic is easier
+# arithmetic
 FuncCreator('+', binary_math_operator_type, op.add)
 FuncCreator('-', binary_math_operator_type, op.sub)
 FuncCreator('*', binary_math_operator_type, op.mul)
+FuncCreator('>', binary_math_comparator_type, op.gt)
+FuncCreator('>=', binary_math_comparator_type, op.ge)
+FuncCreator('==', binary_math_comparator_type, op.eq)
 
-FuncCreator('if', FuncType(bool, , op.mul)
+# array indexing
+FuncCreator('make_slice', FuncType((T_int, T_int), T_slice), make_slice)
 
-# FuncCreator('sq', FuncType(T1, T1), np.square)
 
-# logic is harder, because in the case of arrays, we get arrays,
-# but in the case of ints we get bools.
-# FuncCreator('>', FuncType((T1, T1), bool), op.gt)
-# FuncCreator('>=', FuncType((T1, T1), bool), op.ge)
-# FuncCreator('==', FuncType((T1, T1), bool), op.eq)
+
+
+
+
+
 
 # Array modification is much harder
 # NOTE(izzy): we need to switch these to ArrayType, because some arrays are

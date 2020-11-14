@@ -56,7 +56,12 @@ def type_check(x, env, print_type_error=True):
         # if proc_type is a function, then we need to check if the given
         # arguments match the input type of the function
         elif isinstance(proc_type, FuncType):
-            check_arguments_to_procedure(x[0], proc_type, arg_types)
+            passed_type_check, return_type =\
+                check_arguments_to_procedure(
+                    x[0], proc_type, arg_types, print_type_error=print_type_error)
+
+            if passed_type_check:
+                return True, return_type, type_tree
 
         # if the proc_type has multiple type options, we need to check if the
         # arguments are consistent with any of those options
@@ -64,8 +69,8 @@ def type_check(x, env, print_type_error=True):
             for possible_proc_type in proc_type.T:
                 if isinstance(possible_proc_type, FuncType):
                     passed_type_check, return_type =\
-                        check_arguments_to_procedure(x[0],
-                            possible_proc_type, arg_types, print_type_error=print_type_error)
+                        check_arguments_to_procedure(
+                            x[0], possible_proc_type, arg_types, print_type_error=print_type_error)
 
                     if passed_type_check:
                         return True, return_type, type_tree
@@ -123,7 +128,6 @@ def check_arguments_to_procedure(proc, proc_type, arg_types, print_type_error=Tr
 
     # and check that each of the arguments match up
     for i, (required_arg_type, given_arg_type) in enumerate(zip(proc_arg_types, arg_types)):
-
         # if the procedure has template type
         if isinstance(required_arg_type, TemplateType):
             # first we check if the TemplateType has already been set
@@ -133,21 +137,20 @@ def check_arguments_to_procedure(proc, proc_type, arg_types, print_type_error=Tr
             # if the template type has not been set in the local type env,
             # then we can set it now.
             else:
-                # if the TemplateType specifies a set of options, we need
-                # to make sure that the given type is one of those options
-                if isinstance(required_arg_type, OptionTemplateType):
-                    if not required_arg_type.accepts(given_arg_type):
-                        debug_print(f'Incorrect argument #{i} to {proc}: {str(proc_type)}')
-                        debug_print(f'\tExpected {str(required_arg_type)}')
-                        debug_print(f'\tReceived {str(given_arg_type)}')
-                        return False, None
+                # if the TemplateType specifies a set of options (see OptionTemplateType)
+                #  we need to make sure that the given type is one of those options
+                if required_arg_type.accepts(given_arg_type):
+                    # set the type in the environment
+                    local_type_env[required_arg_type] = given_arg_type
+                    continue
+                else:
+                    debug_print(f'Incorrect argument #{i} to {proc}: {str(proc_type)}')
+                    debug_print(f'\tExpected {str(required_arg_type)}')
+                    debug_print(f'\tReceived {str(given_arg_type)}')
+                    return False, None
 
-                # set the type in the environment
-                local_type_env[required_arg_type] = given_arg_type
-                continue
 
         if not required_arg_type.accepts(given_arg_type):
-
             debug_print(f'Incorrect argument #{i} to {proc}: {str(proc_type)}')
             debug_print(f'\tExpected {str(required_arg_type)}')
             debug_print(f'\tReceived {str(given_arg_type)}')

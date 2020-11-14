@@ -148,6 +148,9 @@ class TemplateType(Type):
     def __init__(self, T):
         super(TemplateType, self).__init__(T)
 
+    def accepts(self, other):
+        return True
+
     def __str__(self):
         return f"<{self.T}>"
 

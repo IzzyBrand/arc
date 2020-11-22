@@ -128,34 +128,10 @@ def check_arguments_to_procedure(proc, proc_type, arg_types, print_type_error=Tr
 
     # and check that each of the arguments match up
     for i, (required_arg_type, given_arg_type) in enumerate(zip(proc_arg_types, arg_types)):
-        # if the procedure has template type
-        if isinstance(required_arg_type, TemplateType):
-            # first we check if the TemplateType has already been set
-            # by one of the previous arguments. if so, type check normally
-            if required_arg_type in local_type_env:
-                required_arg_type = local_type_env[required_arg_type]
-            # if the template type has not been set in the local type env,
-            # then we can set it now.
-            else:
-                # if the TemplateType specifies a set of options (see OptionTemplateType)
-                #  we need to make sure that the given type is one of those options
-                if required_arg_type.accepts(given_arg_type):
-                    # set the type in the environment
-                    local_type_env[required_arg_type] = given_arg_type
-                    continue
-                else:
-                    debug_print(f'Incorrect argument #{i} to {proc}: {str(proc_type)}')
-                    debug_print(f'\tExpected {str(required_arg_type)}')
-                    debug_print(f'\tReceived {str(given_arg_type)}')
-                    return False, None
-
-
-        if not required_arg_type.accepts(given_arg_type):
+        if not accepts(required_arg_type, given_arg_type, local_type_env):
             debug_print(f'Incorrect argument #{i} to {proc}: {str(proc_type)}')
             debug_print(f'\tExpected {str(required_arg_type)}')
             debug_print(f'\tReceived {str(given_arg_type)}')
-            return False, None
-
     # look up the return type in the local type env if needed
     if isinstance(proc_type.T_out, TemplateType):
         if proc_type.T_out in local_type_env:
@@ -168,6 +144,52 @@ def check_arguments_to_procedure(proc, proc_type, arg_types, print_type_error=Tr
     else:
         return_type = proc_type.T_out
     return True, return_type
+
+
+def accepts(required, given, local_type_env):
+    # for ArrayTypes, we need to make sure the element types match
+    if isinstance(required, ArrayType):
+        # we use required.__class__ to handle the case when
+        # required is a subclass of ArrayType
+        if not isinstance(given, required.__class__):
+            return False
+        else:
+            # if both are arrays, check to make sure the ArrayType matches
+            return accepts(required.T, given.T, local_type_env)
+
+    # check each of the options in an OptionType
+    if isinstance(required, OptionType):
+        for r in required.T:
+            if accepts(required, given, local_type_env): return True
+        return False
+
+    # if the argument has a template type
+    elif isinstance(required, TemplateType):
+        # first we check if the TemplateType has already been set by one of
+        # the previous arguments. if so, type check what it was set to
+        if required in local_type_env:
+            required = local_type_env[required]
+            return accepts(local_type_env[required], given, local_type_env)
+
+        # if the TemplateType specifies a set of options (see OptionTemplateType)
+        # we need to make sure that the given type is one of those options
+        elif isinstance(required, OptionTemplateType) and\
+            not accepts(required.T, given, local_type_env):
+            return False
+
+        # if the template type has not been set in the local type env,
+        # then we can set it now.
+        local_type_env[required] = given
+        return True
+
+    elif not isinstance(given, required.__class__):
+        return False
+
+    elif str(required) != str(given):
+        return False
+
+    else:
+        return True
 
 
 int_types = ['numpy.'+t for t in dir(np) if 'int' in t] + ['int']
@@ -226,3 +248,4 @@ def array_to_type(x):
         return Array2DType(element_type)
     else:
         return ArrayType(element_type)
+

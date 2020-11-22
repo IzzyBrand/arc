@@ -39,19 +39,6 @@ class Type:
     def __str__(self):
         return self.T
 
-    def accepts(self, other):
-        """ When self if the specified argument type of the function, we need
-        to check if that function will  accept an argument of Type other
-
-        Arguments:
-            other {Type} -- the type of the given argument
-
-        Returns:
-            bool -- True if other is a valid argument to self
-        """
-        if not isinstance(other, self.__class__): return False
-        else: return str(self) == str(other)
-
 class TupleType(Type):
     """ Describes the type of a tuple of items
 
@@ -98,9 +85,7 @@ class ArrayType(Type):
     def __init__(self, T):
         super(ArrayType, self).__init__(T)
 
-    def accepts(self, other):
-        if not isinstance(other, self.__class__): return False
-        else: return self.T.accepts(other.T)
+
 
     def __str__(self):
         return f"Array{str(self.T)}"
@@ -121,12 +106,8 @@ class OptionType(Type):
         Type
     """
     def __init__(self, *args):
-        super(OptionType, self).__init__(args)
-
-    def accepts(self, other):
-        a = False
-        for t in self.T: a = a or t.accepts(other)
-        return a
+        assert isinstance(args, tuple)
+        self.T = args
 
     def __str__(self):
         return f"({' or '.join(str(t) for t in self.T)})"
@@ -146,18 +127,16 @@ class TemplateType(Type):
         Type
     """
     def __init__(self, T):
-        super(TemplateType, self).__init__(T)
-
-    def accepts(self, other):
-        return True
+        if isinstance(T, tuple): return OptionTemplateType(T)
+        elif isinstance(T, OptionType): return OptionTemplateType(T.T)
+        else: self.T = T
 
     def __str__(self):
         return f"<{self.T}>"
 
-
 class OptionTemplateType(TemplateType):
     """ Ok, we're getting complicated here, but bear with me. Templated
-    functions are nice, but notall  templated functions can accept any
+    functions are nice, but notall templated functions can accept any
     argument types. For example, while "map" is a pure templated function, in
     the sense that it can work with any arguments that match the type template
     "+" can add arrays or ints, but not functions. So the OptionTemplateType
@@ -167,12 +146,16 @@ class OptionTemplateType(TemplateType):
     Extends:
         TemplateType
     """
-    def __init__(self, T, options):
-        self.T = T
-        self.options = options
+    def __init__(self, T):
+        if isinstance(T, tuple):
+            self.T = OptionType(*T)
+        elif isinstance(T, OptionType):
+            self.T = T
+        else:
+            print('Incorrect args to OptionTemplateType')
 
     def __str__(self):
-        return f"<{self.T}>: ({' or '.join(str(t) for t in self.options)})"
+        return f"<{' or '.join(str(t) for t in self.T)}>"
 
 
 if __name__ == '__main__':

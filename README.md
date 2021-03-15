@@ -8,6 +8,7 @@ Taking a stab at The Abstraction and Reasoning Corpus
 git clone git@github.com:IzzyBrand/arc.git
 cd arc
 git submodule init
+git submodule update
 ```
 
 ## Looking at examples

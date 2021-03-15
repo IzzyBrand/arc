@@ -19,4 +19,21 @@ programs = {
 	'2bee17df' = 'create vertical and horizontal green lines with on either side contact a blue and red square, respectively',
 	'67a3c6ac' = 'reflect the image horizontally',
 	'ce22a75a' = 'where before there was a grey square, place a 3*3 square of blue with the center where the grey was',
+	'a64e4611' = 'for each black square along the border not touching a colored square, project a ray of green squares along all black squares on the same line going in while maintaining a border of 1 black square',
+	'9565186b' = 'find the mode color and color all other squares gray',
+	'b60334d2' = 'for each gray square, make it the center of a 3*3 blue square with gray corners and a black center',
+	'6773b310' = 'for each "tile" separated by the light blue lines, color in a corresponding output square dark blue if there are 2 pink squares in the tile and black if there is only 1 pink square',
+	'4be741c5' = 'for each distinct vertical/horizontal region of colored squares, append a horizontally/vertically adjacent square of same color',
+	'447fd412' = 'for each n*n red square not touching any blue squares, repeat the pattern of the red squares touching blue squares upscaled by a factor of n',
+	'810b9b61' = 'for each blue shape, color it green if it is closed',
+	'6e82a1ae' = 'for each shape (set of adjacent gray squares), color it green if it is comprised of 2 squares, red if 3 squares, and blue if 4 squares',
+	'5c2c9af4' = 'for each diagonal of colored squares, create a repeating frame of the same color around the center square with a border margin equivalent to the diagnol distance from the center square to either of the two other squares.',
+	'8be77c9e' = 'vertically append its vertical reflection',
+	'e48d4e1a' = 'find the "center square" which is indicated by the crosshair of colored squares. Then, on a blank grid of same dimensions, fill in a square of same color in the original position but down n squares and left n squares, with n being the number of gray squares in the test grid. Finally, project same color to all squares in same column or row',
+	'b2862040' = 'color all closed blue shapes teal, with closed meaning each and every blue square in a shape is adjacent to another blue square',
+	'e179c5f4' = 'start with the blue square in the lower left, and color the square diagonally up and right, switching horizontal directions each time the first or last column is reached. Repeat this until in the first row, and then color all leftover black squares teal',
+	'b8cdaf2b' = 'find the color in the center column of the bottom row. Then, find the color squares in the second to last row. Lastly, diagnolally project the first color you found from the end squares of the shape in the second to last row',
+	
+
+
 }

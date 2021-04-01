@@ -1,0 +1,5 @@
+pip install virtualenv
+virtualenv {env_name} -p {python version}
+source {env_name}/bin/activate
+pip install matplotlib
+deactivate

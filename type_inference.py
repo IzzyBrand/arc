@@ -1,11 +1,9 @@
-#!/usr/bin/env python
-"""
-.. module:: inference
-   :synopsis: An implementation of the Hindley Milner type checking algorithm
-              based on the Scala code by Andrew Forrest, the Perl code by
-              Nikita Borisov and the paper "Basic Polymorphic Typechecking"
-              by Cardelli.
-.. moduleauthor:: Robert Smallshire
+""" Massachusetts Institute of Technology
+
+Izzy Brand, 2021
+
+Based on an implementation by Robert Smallshire
+https://github.com/rob-smallshire/hindley-milner-python
 """
 
 # =======================================================#

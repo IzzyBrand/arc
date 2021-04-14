@@ -10,7 +10,7 @@ import numpy as np
 import sys
 from arc_lisp_env import extended_env
 from environment import typed_env
-from type_check import type_check
+from old_types.type_check import type_check
 
 ################ Parsing: parse, tokenize, and read_from_tokens
 

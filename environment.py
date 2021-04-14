@@ -1,4 +1,4 @@
-from type_system import *
+from old_types.type_system import *
 
 def make_slice(start, end):
     if end == 0: end = None

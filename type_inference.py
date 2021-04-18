@@ -6,6 +6,7 @@ Based on an implementation by Robert Smallshire
 https://github.com/rob-smallshire/hindley-milner-python
 """
 
+
 # =======================================================#
 # Class definitions for the abstract syntax tree nodes
 # which comprise the little language for which types
@@ -204,7 +205,7 @@ def analyse(node, env, non_generic=set(), parent_smush={}):
 
 
     if isinstance(node, Identifier):
-        return get_type(node.name, env, non_generic, parent_smush), {}
+        return get_type(node.name, env, non_generic, parent_smush)
 
     elif isinstance(node, Apply):
         fun_type, fun_smush = analyse(node.fn, env, non_generic, parent_smush)
@@ -259,7 +260,7 @@ def get_type(name, env, non_generic, smush):
         # return lookup(env[name], smush)
         return fresh(env[name], non_generic, smush)
     elif is_integer_literal(name):
-        return Integer
+        return Integer, {}
     else:
         raise ParseError(f"Undefined symbol {name}")
 
@@ -274,7 +275,7 @@ def fresh(t, non_generic, smush):
         t: A type to be copied.
         non_generic: A set of non-generic TypeVariables
     """
-    mappings = {}  # A mapping of TypeVariables to TypeVariables
+    new_smush = {}  # A mapping of TypeVariables to TypeVariables
 
     def freshrec(tp):
         p = lookup(tp, smush)
@@ -284,19 +285,19 @@ def fresh(t, non_generic, smush):
                 # defined recurslively. If p is being defined recursively, we do
                 # not let it have multiple types within the defintion
                 return p
-            elif p not in mappings:
+            elif p not in new_smush:
                 # NOTE(izzy): see http://lucacardelli.name/Papers/BasicTypechecking.pdf
                 # bottom of page 10 for an explanation of why we do this. in short, if
                 # p is a polymorphic type, we want to allow p to take on diffent types
                 # in different contexts, so we give it a new typevariable
-                mappings[p] = TypeVariable()
+                new_smush[p] = TypeVariable()
 
-            return mappings[p]
+            return new_smush[p]
 
         elif isinstance(p, TypeOperator):
             return TypeOperator(p.name, [freshrec(x) for x in p.types])
 
-    return freshrec(t)
+    return freshrec(t), new_smush
 
 
 def unify(t1, t2, smush):
@@ -419,7 +420,6 @@ def is_integer_literal(name):
 # ==================================================================#
 # Example code to exercise the above
 
-
 def try_exp(env, node):
     """Try to evaluate a type printing the result or reporting errors.
 
@@ -456,8 +456,8 @@ def main():
     var1 = TypeVariable()
     var2 = TypeVariable()
     pair_type = TypeOperator("*", (var1, var2))
-
     var3 = TypeVariable()
+
 
     my_env = {"pair": Function(var1, Function(var2, pair_type)),
               "true": Bool,
@@ -474,6 +474,7 @@ def main():
                        Identifier("true")))
 
     examples = [
+
         # factorial
         Letrec("factorial",  # letrec factorial =
                Lambda("n",  # fn n =>
@@ -589,7 +590,6 @@ def main():
     ]
 
     for example in examples:
-        TypeVariable.reset_counters()
         try_exp(my_env, example)
 
 

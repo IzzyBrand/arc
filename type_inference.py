@@ -135,9 +135,9 @@ class TypeVariable(object):
         return f"TypeVariable(id = {self.id})"
 
     @classmethod
-    def reset_counters():
-        TypeVariable.next_variable_id = 0
-        TypeVariable.next_variable_name = "T0"
+    def reset_counters(cls):
+        cls.next_variable_id = 0
+        cls.next_variable_name = "T0"
 
 
 class TypeOperator(object):
@@ -172,7 +172,11 @@ Bool = TypeOperator("bool", [])  # Basic bool
 # =======================================================#
 # Type inference machinery
 
-def analyse(node, env, non_generic=set()):
+def str_smush(smush):
+    return "\n".join([f"\t{k} : {v}" for k,v in smush.items()])
+
+
+def analyse(node, env, non_generic=set(), parent_smush={}):
     """Computes the type of the expression given by node.
 
     The type of the node is computed in the context of the
@@ -197,12 +201,14 @@ def analyse(node, env, non_generic=set()):
         ParseError: The abstract syntax tree rooted at node could not be parsed
     """
 
+
+
     if isinstance(node, Identifier):
-        return get_type(node.name, env, non_generic, {}), {}
+        return get_type(node.name, env, non_generic, parent_smush), {}
 
     elif isinstance(node, Apply):
-        fun_type, fun_smush = analyse(node.fn, env, non_generic)
-        arg_type, arg_smush = analyse(node.arg, env, non_generic)
+        fun_type, fun_smush = analyse(node.fn, env, non_generic, parent_smush)
+        arg_type, arg_smush = analyse(node.arg, env, non_generic, parent_smush)
         result_type = TypeVariable()
         res_smush = unify(Function(arg_type, result_type), fun_type, combine(fun_smush, arg_smush))
         return result_type, res_smush
@@ -213,14 +219,14 @@ def analyse(node, env, non_generic=set()):
         new_env[node.v] = arg_type
         new_non_generic = non_generic.copy()
         new_non_generic.add(arg_type)
-        result_type, body_smush = analyse(node.body, new_env, new_non_generic)
+        result_type, body_smush = analyse(node.body, new_env, new_non_generic, parent_smush)
         return Function(arg_type, result_type), body_smush
 
     elif isinstance(node, Let):
-        defn_type, defn_smush = analyse(node.defn, env, non_generic)
+        defn_type, defn_smush = analyse(node.defn, env, non_generic, parent_smush)
         new_env = env.copy()
         new_env[node.v] = defn_type
-        body_type, body_smush = analyse(node.body, new_env, non_generic)
+        body_type, body_smush = analyse(node.body, new_env, non_generic, parent_smush)
         return body_type, combine(defn_smush, body_smush)
 
     elif isinstance(node, Letrec):
@@ -229,10 +235,10 @@ def analyse(node, env, non_generic=set()):
         new_env[node.v] = new_type
         new_non_generic = non_generic.copy()
         new_non_generic.add(new_type)
-        defn_type, defn_smush = analyse(node.defn, new_env, new_non_generic)
-        defn_smush = unify(new_type, defn_type, defn_smush)
-        body_type, body_smush = analyse(node.body, new_env, non_generic)
-        return body_type, combine(defn_smush, body_smush)
+        defn_type, defn_smush = analyse(node.defn, new_env, new_non_generic, parent_smush)
+        new_defn_smush = unify(new_type, defn_type, defn_smush)
+        body_type, body_smush = analyse(node.body, new_env, non_generic, combine(parent_smush, new_defn_smush))
+        return body_type, combine(new_defn_smush, body_smush)
 
     assert 0, f"Unhandled syntax node {type(node)}"
 
@@ -250,6 +256,7 @@ def get_type(name, env, non_generic, smush):
             environment.
     """
     if name in env:
+        # return lookup(env[name], smush)
         return fresh(env[name], non_generic, smush)
     elif is_integer_literal(name):
         return Integer
@@ -272,12 +279,20 @@ def fresh(t, non_generic, smush):
     def freshrec(tp):
         p = lookup(tp, smush)
         if isinstance(p, TypeVariable):
-            if not occurs_in(p, non_generic, smush):
-                if p not in mappings:
-                    mappings[p] = TypeVariable()
-                return mappings[p]
-            else:
+            if occurs_in(p, non_generic, smush):
+                # NOTE(izzy): non_generic type variables are ones that might be
+                # defined recurslively. If p is being defined recursively, we do
+                # not let it have multiple types within the defintion
                 return p
+            elif p not in mappings:
+                # NOTE(izzy): see http://lucacardelli.name/Papers/BasicTypechecking.pdf
+                # bottom of page 10 for an explanation of why we do this. in short, if
+                # p is a polymorphic type, we want to allow p to take on diffent types
+                # in different contexts, so we give it a new typevariable
+                mappings[p] = TypeVariable()
+
+            return mappings[p]
+
         elif isinstance(p, TypeOperator):
             return TypeOperator(p.name, [freshrec(x) for x in p.types])
 
@@ -294,7 +309,7 @@ def unify(t1, t2, smush):
         t2: The second type to be be equivalent
 
     Returns:
-        None
+        smush
 
     Raises:
         InferenceError: Raised if the types cannot be unified.
@@ -302,28 +317,31 @@ def unify(t1, t2, smush):
 
     a = lookup(t1, smush)
     b = lookup(t2, smush)
+    new_smush = smush.copy()
     if isinstance(a, TypeVariable):
         if a != b:
-            if occurs_in_type(a, b, smush):
+            if occurs_in_type(a, b, new_smush):
                 raise InferenceError("recursive unification")
-            else: smush[a] = b
-        return smush
+            else: new_smush[a] = b
+        return new_smush
     elif isinstance(a, TypeOperator) and isinstance(b, TypeVariable):
-        return unify(b, a, smush)
+        return unify(b, a, new_smush)
     elif isinstance(a, TypeOperator) and isinstance(b, TypeOperator):
         if a.name != b.name or len(a.types) != len(b.types):
             raise InferenceError(f"Type mismatch: {a} != {b}")
         for p, q in zip(a.types, b.types):
-            smush = unify(p, q, smush)
-        return smush
+            new_smush = unify(p, q, new_smush)
+        return new_smush
     else:
         assert 0, "Not unified"
 
 
-def combine(smush1, smush2):
-    for k, v in smush1.items():
-        smush2 = unify(k, v, smush2)
-    return smush2
+def combine(*smushes):
+    new_smush = {}
+    for smush in smushes:
+        for k, v in smush.items():
+            new_smush = unify(k, v, new_smush)
+    return new_smush
 
 
 def lookup(a, smush):
@@ -416,6 +434,9 @@ def try_exp(env, node):
     try:
         t, smush = analyse(node, env)
         print(lookup(t, smush))
+        # print("Smush")
+        # for k,v in smush.items():
+        #     print(f"\t{k} : {v}")
     except (ParseError, InferenceError) as e:
         print(e)
 
@@ -443,7 +464,8 @@ def main():
               "cond": Function(Bool, Function(var3, Function(var3, var3))),
               "zero": Function(Integer, Bool),
               "pred": Function(Integer, Integer),
-              "times": Function(Integer, Function(Integer, Integer))}
+              "times": Function(Integer, Function(Integer, Integer)),
+              "plus": Function(Integer, Function(Integer, Integer))}
 
     pair = Apply(Apply(Identifier("pair"),
                        Apply(Identifier("f"),
@@ -478,6 +500,22 @@ def main():
                          Apply(Identifier("x"), Identifier("3"))),
                    Apply(Identifier("x"), Identifier("true")))),
 
+        # Should fail:
+        Lambda("x",
+            Let("y", Identifier("x"),
+               Apply(
+                   Apply(Identifier("pair"),
+                         Apply(Identifier("y"), Identifier("3"))),
+                   Apply(Identifier("y"), Identifier("true"))))),
+
+        # Should fail
+        Lambda("x",
+            Let("y", Lambda("z", Apply(Identifier("x"), Identifier("z"))),
+               Apply(
+                   Apply(Identifier("pair"),
+                         Apply(Identifier("y"), Identifier("3"))),
+                   Apply(Identifier("y"), Identifier("true"))))),
+
         # pair(f(3), f(true))
         Apply(
             Apply(Identifier("pair"), Apply(Identifier("f"), Identifier("4"))),
@@ -507,10 +545,51 @@ def main():
 
         # Function composition
         # fn f (fn g (fn arg (f g arg)))
-        Lambda("f", Lambda("g", Lambda("arg", Apply(Identifier("g"), Apply(Identifier("f"), Identifier("arg"))))))
+        Lambda("f", Lambda("g", Lambda("arg", Apply(Identifier("g"), Apply(Identifier("f"), Identifier("arg")))))),
+
+        Letrec("fib",  # letrec factorial =
+               Lambda("n",  # fn n =>
+                      Apply(
+                          Apply(  # cond (zero n) 1
+                              Apply(Identifier("cond"),  # cond (zero n)
+                                    Apply(Identifier("zero"), Identifier("n"))),
+                              Identifier("1")),
+                          Apply(  # times n
+                              Apply(Identifier("plus"), Apply(Identifier("fib"),
+                                    Apply(Identifier("pred"), Identifier("n")))),
+                              Apply(Identifier("fib"),
+                                    Apply(Identifier("pred"),
+                                        Apply(Identifier("pred"), Identifier("n"))))
+                          )
+                      )
+                      ),  # in
+               Apply(Identifier("fib"), Identifier("5"))
+               ),
+
+        # tictoc (mutual recursion)
+        Letrec("tic",  # letrec tic =
+               Lambda("n",  # fn n =>
+                      Apply(Apply(Apply(
+                        Identifier("cond"), Apply(Identifier("zero"), Identifier("n"))),
+                        Identifier("0")),
+                         Letrec("toc",  # letrec tic =
+                           Lambda("n",  # fn n =>
+                                  Apply(Apply(Apply(
+                                    Identifier("cond"), Apply(Identifier("zero"), Identifier("n"))),
+                                    Identifier("1")),
+                                    Apply(Identifier("tic"), Apply(Identifier("pred"), Identifier("n")))
+                                  )
+                                  ),  # in
+                           Apply(Identifier("tic"), Identifier("5"))
+                           )
+                      )
+                      ),  # in
+               Apply(Identifier("tic"), Identifier("5"))
+               ),
     ]
 
     for example in examples:
+        TypeVariable.reset_counters()
         try_exp(my_env, example)
 
 

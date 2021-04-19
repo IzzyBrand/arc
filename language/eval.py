@@ -1,3 +1,4 @@
+from copy import deepcopy
 import numpy as np
 
 from language.ast import Identifier, Apply, Lambda, Let, Letrec
@@ -7,8 +8,9 @@ from language.util import is_integer_literal, is_color_literal, ParseError
 def get_identifier(name, env):
     """get the value of an identifier"""
 
-    if name in env:
-        return env.find(x)[x]
+    val = env.get(name)
+    if val != None:
+        return val
     elif is_integer_literal(name):
         return int(name)
     elif is_color_literal(name):
@@ -28,7 +30,14 @@ class NestedEnv(dict):
         elif self.outer is not None:
             return self.outer.find(var)
         else:
-            print(f'Failed to find {var} in {self}')
+            return None
+
+    def get(self, var):
+        env = self.find(var)
+        if env is None:
+            return None
+        else:
+            return env[var]
 
     def __str__(self):
         return '{'+',\t'.join([f'{str(k)}: {str(v)}' for k,v \
@@ -51,8 +60,7 @@ class NestedEnv(dict):
 
 class Procedure(object):
     """A user-defined Scheme procedure."""
-    def __init__(self, param, body, env, func_string=None):
-        self.func_string=func_string
+    def __init__(self, param, body, env):
         self.param, self.body, self.env = param, body, env
 
     def __call__(self, arg):
@@ -62,7 +70,7 @@ class Procedure(object):
         return eval(self.body, new_env)
 
     def __str__(self):
-        f"(fn {self.param} => {self.body})"
+        return f"(fn {self.param} => {self.body})"
 
 
 def eval(x, env):
@@ -71,17 +79,17 @@ def eval(x, env):
     if not isinstance(env, NestedEnv): env = NestedEnv(env)
 
     if isinstance(x, Identifier):
-        return get_identifier(name, env)
+        return get_identifier(x.name, env)
 
-    elif is instance(x, Apply):
-        prog = eval(x.fn, env)
+    elif isinstance(x, Apply):
+        proc = eval(x.fn, env)
         arg = eval(x.arg, env)
         return proc(arg)
 
-    elif is instance(x, Lambda):
-        return Procedure(x.v, x.body)
+    elif isinstance(x, Lambda):
+        return Procedure(x.v, x.body, env)
 
-    elif is instance(x, Let):
+    elif isinstance(x, Let):
         # NOTE(izzy): this implementation is more efficient the Letrec, because
         # it doesn't copy the environment, but it doesn't support recursion.
         # The reason recursion won't work is because to create the new
@@ -93,11 +101,11 @@ def eval(x, env):
         new_env = NestedEnv({var: val}, outer=env)
         return eval(x.body, env=new_env)
 
-    elif is instance(x, Letrec):
+    elif isinstance(x, Letrec):
         # NOTE(izzy): this implementation does support recursion, but it copies
         # the environment every time which isn't great
         new_env = deepcopy(env)
         var = x.v
         val = eval(x.defn, new_env)
         new_env[var] = val
-        return eval(body, env=new_env)
+        return eval(x.body, env=new_env)

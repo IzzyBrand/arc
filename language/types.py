@@ -72,10 +72,10 @@ class Function(TypeOperator):
         super(Function, self).__init__("->", [from_type, to_type])
 
 
-def curried_function(*types):
+def curried_type(*types):
     """Syntactic sugar for creating a curried function with multiple args"""
     if len(types) > 2:
-        return Function(types[0], curried_function(*types[1:]))
+        return Function(types[0], curried_type(*types[1:]))
     elif len(types) == 2:
         return Function(types[0], types[1])
     else:

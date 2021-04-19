@@ -57,7 +57,7 @@ class Procedure(object):
 
     def __call__(self, arg):
         # create a new environment with the argument bound to input
-        new_env = Env({self.param: arg}, outer=self.env)
+        new_env = NestedEnv({self.param: arg}, outer=self.env)
         # and evaluate the procedure in the new environment
         return eval(self.body, new_env)
 
@@ -82,7 +82,22 @@ def eval(x, env):
         return Procedure(x.v, x.body)
 
     elif is instance(x, Let):
-        pass
+        # NOTE(izzy): this implementation is more efficient the Letrec, because
+        # it doesn't copy the environment, but it doesn't support recursion.
+        # The reason recursion won't work is because to create the new
+        # environment which we pass to the body, we need to `exp`, the
+        # variable to be bound in the new environment. In the case where we are
+        # defining a recursive function, exp needs access to itself
+        var = x.v
+        val = eval(x.defn, env)
+        new_env = NestedEnv({var: val}, outer=env)
+        return eval(x.body, env=new_env)
 
     elif is instance(x, Letrec):
-        pass
+        # NOTE(izzy): this implementation does support recursion, but it copies
+        # the environment every time which isn't great
+        new_env = deepcopy(env)
+        var = x.v
+        val = eval(x.defn, new_env)
+        new_env[var] = val
+        return eval(body, env=new_env)

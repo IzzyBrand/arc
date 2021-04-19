@@ -1,5 +1,7 @@
-from language.type_inference import *
 from language.ast import *
+from language.types import *
+from language.type_inference import *
+
 
 
 var1 = TypeVariable()

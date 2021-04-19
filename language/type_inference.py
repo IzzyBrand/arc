@@ -7,42 +7,9 @@ https://github.com/rob-smallshire/hindley-milner-python
 """
 
 
-from language.ast import *
+from language.ast import Identifier, Apply, Lambda, Let, Letrec
 from language.types import *
-
-# =======================================================#
-# Exception types
-
-class InferenceError(Exception):
-    """Raised if the type inference algorithm cannot infer types successfully"""
-
-    def __init__(self, message):
-        self.__message = message
-
-    message = property(lambda self: self.__message)
-
-    def __str__(self):
-        return str(self.message)
-
-
-class ParseError(Exception):
-    """Raised if the type environment supplied for is incomplete"""
-
-    def __init__(self, message):
-        self.__message = message
-
-    message = property(lambda self: self.__message)
-
-    def __str__(self):
-        return str(self.message)
-
-
-
-# =======================================================#
-# Type inference machinery
-
-def str_smush(smush):
-    return "\n".join([f"\t{k} : {v}" for k,v in smush.items()])
+from language.util import is_integer_literal, is_color_literal, InferenceError, ParseError
 
 
 def analyse(node, env, non_generic=set(), parent_smush={}):
@@ -69,8 +36,6 @@ def analyse(node, env, non_generic=set(), parent_smush={}):
             if it is not possible to unify two types such as Integer and Bool
         ParseError: The abstract syntax tree rooted at node could not be parsed
     """
-
-
 
     if isinstance(node, Identifier):
         return get_type(node.name, env, non_generic, parent_smush)
@@ -129,6 +94,8 @@ def get_type(name, env, non_generic, smush):
         return fresh(env[name], non_generic, smush)
     elif is_integer_literal(name):
         return Integer, {}
+    elif is_color_literal(name):
+        return Color, {}
     else:
         raise ParseError(f"Undefined symbol {name}")
 
@@ -266,20 +233,3 @@ def occurs_in(t, types, smush):
         True if t occurs in any of types, otherwise False
     """
     return any(occurs_in_type(t, t2, smush) for t2 in types)
-
-
-def is_integer_literal(name):
-    """Checks whether name is an integer literal string.
-
-    Args:
-        name: The identifier to check
-
-    Returns:
-        True if name is an integer literal, otherwise False
-    """
-    result = True
-    try:
-        int(name)
-    except ValueError:
-        result = False
-    return result

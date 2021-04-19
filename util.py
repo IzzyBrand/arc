@@ -7,6 +7,19 @@ from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
 import numpy as np
 
+color_names = [
+    "black",
+    "blue",
+    "red",
+    "green",
+    "yellow",
+    "gray",
+    "pink",
+    "orange",
+    "light_blue",
+    "brown"
+]
+
 # I grabbed this colormap from the CSS on the ARC website.
 cmap = ListedColormap([
     "#000000",

@@ -71,6 +71,7 @@ make("filter",
     lambda f, a: np.array([x for x in a if f(x)]),
     curried_function(T_filter, T0_array, T0_array))
 
+
 if __name__ == "__main__":
     for k, v in type_env.items():
         print(f"{k}:\t{v}")

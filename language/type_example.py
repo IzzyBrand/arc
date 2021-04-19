@@ -1,4 +1,4 @@
-from language.ast import *
+from language.ast import Identifier, Apply, Lambda, Let, Letrec
 from language.types import *
 from language.type_inference import *
 

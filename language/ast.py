@@ -1,14 +1,3 @@
-class Lambda(object):
-    """Lambda abstraction"""
-
-    def __init__(self, v, body):
-        self.v = v
-        self.body = body
-
-    def __str__(self):
-        return f"(fn {self.v} => {self.body})"
-
-
 class Identifier(object):
     """Identifier"""
 
@@ -28,6 +17,16 @@ class Apply(object):
 
     def __str__(self):
         return f"({self.fn} {self.arg})"
+
+class Lambda(object):
+    """Lambda abstraction"""
+
+    def __init__(self, v, body):
+        self.v = v
+        self.body = body
+
+    def __str__(self):
+        return f"(fn {self.v} => {self.body})"
 
 
 class Let(object):

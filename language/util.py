@@ -49,7 +49,7 @@ class InferenceError(Exception):
 
 
 class ParseError(Exception):
-    """Raised if the type environment supplied for is incomplete"""
+    """Raised if the supplied environment is incomplete"""
 
     def __init__(self, message):
         self.__message = message

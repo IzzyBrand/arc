@@ -1,6 +1,15 @@
+""" Massachusetts Institute of Technology
+
+Izzy Brand, 2021
+
+Based on an implementation by Robert Smallshire
+https://github.com/rob-smallshire/hindley-milner-python
+"""
+
 from language.ast import Identifier, Apply, Lambda, Let, Letrec
 from language.types import *
-from language.type_inference import *
+from language.type_inference import analyse, lookup
+from language.util import InferenceError, ParseError
 
 
 var1 = TypeVariable()
@@ -179,7 +188,8 @@ def test_holes():
     t, smush = analyse(factorial_program, my_env)
     for k,v in smush.items():
         print(f"{k} : {v}")
-    print(f"Result: type variable {t} has type {lookup(t, smush)}")
+    print(f"Result:\ttype variable {t} has type {lookup(t, smush)}")
+    print()  # newline
 
     # the reason we return the smush, is so we can look up the type of other type
     # variables as well. In this case we'll look up the type of HOLE
@@ -187,8 +197,8 @@ def test_holes():
     t, smush = analyse(factorial_program_with_hole, my_env)
     for k,v in smush.items():
         print(f"{k} : {v}")
-    print(f"Result: type variable {t} has type {lookup(t, smush)}")
-    print(f"HOLE: type variable {HOLE} has type {lookup(HOLE, smush)}")
+    print(f"Result:\ttype variable {t} has type {lookup(t, smush)}")
+    print(f"HOLE:\ttype variable {HOLE} has type {lookup(HOLE, smush)}")
 
 
 def run_examples():
@@ -217,5 +227,5 @@ def run_examples():
 
 
 if __name__ == '__main__':
-    run_examples()
+    # run_examples()
     test_holes()

@@ -76,6 +76,17 @@ make("cond",
     lambda pred: lambda x: lambda y: x if pred else y,
     curried_type(Bool, T0, T0, T0))
 
+# NOTE(izzy): higher order functions (ones that take a func as an arg)
+# may need to use use a diffent means of evaluation. Instead of
+#
+#     f(x)
+#
+# we might need
+#
+#     Apply(f, x)
+#
+# This might cause a circular dependency because we are importing from ast
+
 T_map = Function(T0, T1)
 make("map",
     lambda f: lambda a: np.array([f(x) for x in a]),

@@ -6,7 +6,6 @@ Based on an implementation by Robert Smallshire
 https://github.com/rob-smallshire/hindley-milner-python
 """
 
-
 from language.ast import Identifier, Apply, Lambda, Let, Letrec
 from language.types import *
 from language.util import is_integer_literal, is_color_literal, InferenceError, ParseError

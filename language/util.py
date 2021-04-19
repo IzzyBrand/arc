@@ -1,3 +1,11 @@
+""" Massachusetts Institute of Technology
+
+Izzy Brand, 2021
+
+Based on an implementation by Robert Smallshire
+https://github.com/rob-smallshire/hindley-milner-python
+"""
+
 from util import color_names
 
 def is_integer_literal(name):

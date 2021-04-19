@@ -48,10 +48,13 @@ class TypeOperator(object):
         num_types = len(self.types)
         if num_types == 0:
             return self.name
+        if num_types == 1:
+            return f"{self.name}({self.types[0]})"
         elif num_types == 2:
+            # infix notation
             return f"({self.types[0]} {self.name} {self.types[1]})"
         else:
-            return f"{self.name} {' '.join(self.types)}"
+            return f"{self.name}({', '.join(self.types)})"
 
 
 class Function(TypeOperator):

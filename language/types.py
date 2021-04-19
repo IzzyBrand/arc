@@ -61,13 +61,14 @@ class Function(TypeOperator):
         super(Function, self).__init__("->", [from_type, to_type])
 
 
-class CurriedFunction(Function):
-    """Syntactic sugar for creating a curried function with multiple argu"""
-    def __init__(self,types):
-        if len(types) > 2:
-            super(CurriedFunction, self).__init__(types[0], CurriedFunction(types[1:]))
-        else:
-            super(CurriedFunction, self).__init__(types[0], types[1])
+def curried_function(*types):
+    """Syntactic sugar for creating a curried function with multiple args"""
+    if len(types) > 2:
+        return Function(types[0], curried_function(*types[1:]))
+    elif len(types) == 2:
+        return Function(types[0], types[1])
+    else:
+        assert 0, "Cannot create a function with one type."
 
 
 # Basic types are constructed with a nullary type constructor

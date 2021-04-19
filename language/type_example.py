@@ -3,7 +3,6 @@ from language.types import *
 from language.type_inference import *
 
 
-
 var1 = TypeVariable()
 var2 = TypeVariable()
 var3 = TypeVariable()

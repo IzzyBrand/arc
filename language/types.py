@@ -59,10 +59,13 @@ class TypeOperator(object):
         if num_types == 1:
             return f"{self.name}({self.types[0]})"
         elif num_types == 2:
-            # infix notation
+            # infix notation (specifically for functions)
             return f"({self.types[0]} {self.name} {self.types[1]})"
+        elif self.name == "->":
+            # multi-function notation
+            return f"({', '.join([str(t) for t in self.types][:-1])} {self.name} {self.types[-1]})"
         else:
-            return f"{self.name}({', '.join(self.types)})"
+            return f"{self.name}({', '.join([str(t) for t in self.types])})"
 
 
 class Function(TypeOperator):
@@ -70,6 +73,17 @@ class Function(TypeOperator):
 
     def __init__(self, from_type, to_type):
         super(Function, self).__init__("->", [from_type, to_type])
+
+
+class MultiFunction(TypeOperator):
+    """An n-ary type constructor which builds function types"""
+
+    def __init__(self, types):
+        super(MultiFunction, self).__init__("->", types)
+
+    # def __str__(self):
+    #     print("here")
+    #     return f"({', '.join([str(t) for t in self.types][:-1])} {self.name} {self.types[-1]})"
 
 
 def curried_type(*types):

@@ -6,7 +6,7 @@ Based on an implementation by Robert Smallshire
 https://github.com/rob-smallshire/hindley-milner-python
 """
 
-from language.ast import Identifier, Apply, Lambda, Let, Letrec
+from language.ast import Identifier, Apply, Lambda, Let, Letrec, MultiLambda
 from language.types import *
 from language.util import is_integer_literal, is_color_literal, InferenceError, ParseError
 
@@ -37,14 +37,27 @@ def analyse(node, env, non_generic=set(), parent_smush={}):
     """
 
     if isinstance(node, Identifier):
+        print("Identifier", node)
         return get_type(node.name, env, non_generic, parent_smush)
 
     elif isinstance(node, Apply):
+        print("Apply", node)
         fun_type, fun_smush = analyse(node.fn, env, non_generic, parent_smush)
         arg_type, arg_smush = analyse(node.arg, env, non_generic, parent_smush)
         result_type = TypeVariable()
+        fun_type = unroll_multi_function(fun_type)
         res_smush = unify(Function(arg_type, result_type), fun_type, combine(fun_smush, arg_smush))
         return result_type, res_smush
+
+    elif isinstance(node, MultiLambda):
+        arg, sub_node = unroll_multi_lambda(node)
+        arg_type = TypeVariable()
+        new_env = env.copy()
+        new_env[arg] = arg_type
+        new_non_generic = non_generic.copy()
+        new_non_generic.add(arg_type)
+        result_type, body_smush = analyse(sub_node, new_env, new_non_generic, parent_smush)
+        return MultiFunction([arg_type] + result_type.types), body_smush
 
     elif isinstance(node, Lambda):
         arg_type = TypeVariable()
@@ -127,7 +140,6 @@ def fresh(t, non_generic, smush):
                 new_smush[p] = TypeVariable()
 
             return new_smush[p]
-
         elif isinstance(p, TypeOperator):
             return TypeOperator(p.name, [freshrec(x) for x in p.types])
 
@@ -149,7 +161,6 @@ def unify(t1, t2, smush):
     Raises:
         InferenceError: Raised if the types cannot be unified.
     """
-
     a = lookup(t1, smush)
     b = lookup(t2, smush)
     new_smush = smush.copy()
@@ -232,3 +243,21 @@ def occurs_in(t, types, smush):
         True if t occurs in any of types, otherwise False
     """
     return any(occurs_in_type(t, t2, smush) for t2 in types)
+
+
+def unroll_multi_lambda(node):
+    assert isinstance(node, MultiLambda), "expected MultiLambda"
+
+    if len(node.vs) > 2:
+        return node.vs[0], MultiLambda(node.vs[1:], node.body)
+    elif len(node.vs) == 2:
+        return node.vs[0], Lambda(node.vs[1], node.body)
+    else:
+        assert 0, "insufficient args to unroll"
+
+
+def unroll_multi_function(node):
+    if len(node.types) > 2:
+        return Function(node.types[0], MultiFunction(node.types[1:]))
+    else:
+        return node

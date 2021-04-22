@@ -6,7 +6,7 @@ Based on an implementation by Robert Smallshire
 https://github.com/rob-smallshire/hindley-milner-python
 """
 
-from language.ast import Identifier, Apply, Lambda, Let, Letrec
+from language.ast import Identifier, Apply, Lambda, Let, Letrec, MultiLambda
 from language.types import *
 from language.type_inference import analyse, lookup
 from language.util import InferenceError, ParseError
@@ -28,7 +28,8 @@ my_env = {"pair": Function(var1, Function(var2, pair_type)),
           "pred": Function(Integer, Integer),
           "times": Function(Integer, Function(Integer, Integer)),
           "plus": Function(Integer, Function(Integer, Integer)),
-          "HOLE": HOLE}
+          "HOLE": HOLE,
+          "multi_plus": MultiFunction([Integer, Integer, Integer])}
 
 pair = Apply(Apply(Identifier("pair"),
                    Apply(Identifier("f"),
@@ -176,6 +177,9 @@ factorial_program_with_hole = Letrec(
         ),
     ),  # in
     Apply(Identifier("factorial"), Identifier("5")),
+
+
+
 )
 
 
@@ -200,6 +204,25 @@ def test_holes():
     print(f"Result:\ttype variable {t} has type {lookup(t, smush)}")
     print(f"HOLE:\ttype variable {HOLE} has type {lookup(HOLE, smush)}")
 
+
+def test_multi_lambda():
+  # prog = MultiLambda(["x", "y"],
+  #                     Apply(
+  #                       Apply(Identifier("plus"), Identifier("x")),
+  #                       Identifier("y")))
+
+  prog = Apply(Identifier("multi_plus"), Identifier("1"))
+  # prog = Identifier("multi_plus")
+
+  print(str(prog) + " : ")
+  try:
+      t, smush = analyse(prog, my_env)
+      print(lookup(t, smush))
+      # print("Smush")
+      # for k,v in smush.items():
+      #     print(f"\t{k} : {v}")
+  except (ParseError, InferenceError) as e:
+      print(e)
 
 def run_examples():
     """The main example program.
@@ -228,4 +251,5 @@ def run_examples():
 
 if __name__ == '__main__':
     # run_examples()
-    test_holes()
+    # test_holes()
+    test_multi_lambda()

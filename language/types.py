@@ -81,10 +81,6 @@ class MultiFunction(TypeOperator):
     def __init__(self, types):
         super(MultiFunction, self).__init__("->", types)
 
-    # def __str__(self):
-    #     print("here")
-    #     return f"({', '.join([str(t) for t in self.types][:-1])} {self.name} {self.types[-1]})"
-
 
 def curried_type(*types):
     """Syntactic sugar for creating a curried function with multiple args"""

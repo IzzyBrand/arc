@@ -206,23 +206,28 @@ def test_holes():
 
 
 def test_multi_lambda():
-  # prog = MultiLambda(["x", "y"],
-  #                     Apply(
-  #                       Apply(Identifier("plus"), Identifier("x")),
-  #                       Identifier("y")))
+    multi_examples = [
+        Identifier("multi_plus"),
+        Apply(Identifier("multi_plus"), Identifier("1")),
+        Apply(Apply(Identifier("multi_plus"), Identifier("1")), Identifier("1")),
+        MultiLambda(["x", "y"],
+                        Apply(
+                          Apply(Identifier("plus"), Identifier("x")),
+                          Identifier("y")))
+    ]
 
-  prog = Apply(Identifier("multi_plus"), Identifier("1"))
-  # prog = Identifier("multi_plus")
+    for example in multi_examples:
 
-  print(str(prog) + " : ")
-  try:
-      t, smush = analyse(prog, my_env)
-      print(lookup(t, smush))
-      # print("Smush")
-      # for k,v in smush.items():
-      #     print(f"\t{k} : {v}")
-  except (ParseError, InferenceError) as e:
-      print(e)
+        print(str(example) + " : ", end=" ")
+        try:
+            t, smush = analyse(example, my_env)
+            print(lookup(t, smush))
+            # print("Smush")
+            # for k,v in smush.items():
+            #     print(f"\t{k} : {v}")
+        except (ParseError, InferenceError) as e:
+            print(e)
+
 
 def run_examples():
     """The main example program.
@@ -238,7 +243,7 @@ def run_examples():
 
     for example in examples:
 
-        print(str(example) + " : ", end=' ')
+        print(str(example) + " : ", end=" ")
         try:
             t, smush = analyse(example, my_env)
             print(lookup(t, smush))

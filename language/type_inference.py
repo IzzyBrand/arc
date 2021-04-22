@@ -37,11 +37,9 @@ def analyse(node, env, non_generic=set(), parent_smush={}):
     """
 
     if isinstance(node, Identifier):
-        print("Identifier", node)
         return get_type(node.name, env, non_generic, parent_smush)
 
     elif isinstance(node, Apply):
-        print("Apply", node)
         fun_type, fun_smush = analyse(node.fn, env, non_generic, parent_smush)
         arg_type, arg_smush = analyse(node.arg, env, non_generic, parent_smush)
         result_type = TypeVariable()
@@ -50,14 +48,9 @@ def analyse(node, env, non_generic=set(), parent_smush={}):
         return result_type, res_smush
 
     elif isinstance(node, MultiLambda):
-        arg, sub_node = unroll_multi_lambda(node)
-        arg_type = TypeVariable()
-        new_env = env.copy()
-        new_env[arg] = arg_type
-        new_non_generic = non_generic.copy()
-        new_non_generic.add(arg_type)
-        result_type, body_smush = analyse(sub_node, new_env, new_non_generic, parent_smush)
-        return MultiFunction([arg_type] + result_type.types), body_smush
+        node = unroll_multi_lambda(node)
+        curried_type, body_smush = analyse(node, env, non_generic, parent_smush)
+        return reroll_multi_function(curried_type), body_smush
 
     elif isinstance(node, Lambda):
         arg_type = TypeVariable()
@@ -246,18 +239,52 @@ def occurs_in(t, types, smush):
 
 
 def unroll_multi_lambda(node):
-    assert isinstance(node, MultiLambda), "expected MultiLambda"
+    """ given a lambda with multiple args, curry the first arg
 
+    Args:
+        node: a MultiLambda node
+
+    Returns:
+        A semantically equivalent AST expressed as a Lambda node
+    """
     if len(node.vs) > 2:
-        return node.vs[0], MultiLambda(node.vs[1:], node.body)
+        return Lambda(node.vs[0], MultiLambda(node.vs[1:], node.body))
     elif len(node.vs) == 2:
-        return node.vs[0], Lambda(node.vs[1], node.body)
+        return Lambda(node.vs[0], Lambda(node.vs[1], node.body))
     else:
-        assert 0, "insufficient args to unroll"
+        assert 0, "not enough arguments to unroll"
 
 
-def unroll_multi_function(node):
-    if len(node.types) > 2:
-        return Function(node.types[0], MultiFunction(node.types[1:]))
+def unroll_multi_function(t):
+    """ given a function with multuple input types, curry the first type
+
+    Args:
+        t: A TypeOperator or TypeVariable to be partially curried
+
+    Returns:
+        the curried or unchanged type
+    """
+    if isinstance(t, TypeOperator) and t.name == "->" and len(t.types) > 2:
+            return Function(t.types[0], MultiFunction(t.types[1:]))
     else:
-        return node
+        return t
+
+
+def reroll_multi_function(t):
+    """ given a curried function, uncurry the first argument
+
+    Args:
+        t: A Function type (curried)
+
+    Returns:
+        an equivalent function of multiple arguments
+    """
+    if len(t.types) != 2: assert 0, "cannot uncurry n-ary TypeOperator"
+    arg_type, return_type = t.types
+    if isinstance(return_type, TypeOperator):
+        return MultiFunction([arg_type] + return_type.types)
+    else:
+        # NOTE(izzy): not sure when this could happen, but also not sure
+        # that it won't. I guess i'll see this warning when it does.
+        print("Warning. Uncurrying function with variable return type.")
+        return MultiFunction(t.types)

@@ -72,19 +72,45 @@ class Procedure(object):
     def __str__(self):
         return f"(fn {self.param} => {self.body})"
 
+def eval_cond(x, env):
+    """handles AST with Apply(Identifier('cond'), ...) at the root
+
+    we need to handle this outside of the default eval Apply because we only
+    want to compute the selected branch of an if statement (lazy eval). If we
+    don't do this, we can't use cond to terminate a recursive function.
+    """
+    try:
+        pred, x, y = x.args
+    except ValueError:
+        raise ParseError(f"Wrong number of arguments to cond:\n{str(x)}")
+    return eval(x, env) if eval(pred, env) else eval(y, env)
+
+
+def get_special_eval(x):
+    """non-standard evaluation (particularly for higher order functions"""
+    if isinstance(x, Apply) and isinstance(x.fn, Identifier) and x.fn.name == "cond":
+        return eval_cond
+    else:
+        return None
+
 
 def eval(x, env):
     # if the environment is a regular dictionary, wrap it in a class
     # which supports nested dictionaries (for local scoping)
     if not isinstance(env, NestedEnv): env = NestedEnv(env)
 
-    if isinstance(x, Identifier):
+    # some higher-order-functions require a special evaluation structure
+    special_eval = get_special_eval(x)
+    if special_eval is not None:
+        return special_eval(x, env)
+
+    elif isinstance(x, Identifier):
         return get_identifier(x.name, env)
 
     elif isinstance(x, Apply):
         proc = eval(x.fn, env)
-        arg = eval(x.arg, env)
-        return proc(arg)
+        args = [eval(a, env) for a in x.args]
+        return proc(*args)
 
     elif isinstance(x, Lambda):
         return Procedure(x.v, x.body, env)

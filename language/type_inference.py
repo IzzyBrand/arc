@@ -6,7 +6,7 @@ Based on an implementation by Robert Smallshire
 https://github.com/rob-smallshire/hindley-milner-python
 """
 
-from language.ast import Identifier, Apply, Lambda, Let, Letrec, MultiLambda
+from language.ast import Identifier, Apply, Lambda, Let, Letrec
 from language.types import *
 from language.util import is_integer_literal, is_color_literal, InferenceError, ParseError
 
@@ -56,19 +56,19 @@ def analyse(node, env, non_generic=set(), parent_smush={}):
         res_smush = unify(Function(*arg_types, result_type), fun_type, combine(fun_smush, *arg_smushes))
         return result_type, res_smush
 
-    elif isinstance(node, MultiLambda):
-        node = curry_lambda(node)
-        curried_type, body_smush = analyse(node, env, non_generic, parent_smush)
-        return uncurry_type(curried_type), body_smush
-
     elif isinstance(node, Lambda):
-        arg_type = TypeVariable()
-        new_env = env.copy()
-        new_env[node.v] = arg_type
-        new_non_generic = non_generic.copy()
-        new_non_generic.add(arg_type)
-        result_type, body_smush = analyse(node.body, new_env, new_non_generic, parent_smush)
-        return Function(arg_type, result_type), body_smush
+        if isinstance(node.v, str):
+            arg_type = TypeVariable()
+            new_env = env.copy()
+            new_env[node.v] = arg_type
+            new_non_generic = non_generic.copy()
+            new_non_generic.add(arg_type)
+            result_type, body_smush = analyse(node.body, new_env, new_non_generic, parent_smush)
+            return Function(arg_type, result_type), body_smush
+        else:
+            node = curry_lambda(node)
+            curried_type, body_smush = analyse(node, env, non_generic, parent_smush)
+            return uncurry_type(curried_type), body_smush
 
     elif isinstance(node, Let):
         defn_type, defn_smush = analyse(node.defn, env, non_generic, parent_smush)
@@ -251,32 +251,34 @@ def curry_lambda(node):
     """ given a lambda with multiple args, curry the first arg
 
     Args:
-        node: a MultiLambda node
+        node: a Lambda node with multiple arguments
 
     Returns:
         A semantically equivalent AST expressed as a Lambda node
     """
-    if len(node.vs) > 2:
-        return Lambda(node.vs[0], MultiLambda(node.vs[1:], node.body))
-    elif len(node.vs) == 2:
-        return Lambda(node.vs[0], Lambda(node.vs[1], node.body))
+    if isinstance(node.v, str):
+        assert 0, "not enough arguments to unroll"
+    elif len(node.v) > 2:
+        return Lambda(node.v[0], Lambda(node.v[1:], node.body))
+    elif len(node.v) == 2:
+        return Lambda(node.v[0], Lambda(node.v[1], node.body))
     else:
         assert 0, "not enough arguments to unroll"
 
 
-def curry_type(t):
-    """ given a function with multuple input types, curry the first type
+# def curry_type(t):
+#     """ given a function with multuple input types, curry the first type
 
-    Args:
-        t: A TypeOperator or TypeVariable to be partially curried
+#     Args:
+#         t: A TypeOperator or TypeVariable to be partially curried
 
-    Returns:
-        the curried or unchanged type
-    """
-    if isinstance(t, TypeOperator) and t.name == "->" and len(t.types) > 2:
-            return Function(t.types[0], Function(t.types[1:]))
-    else:
-        return t
+#     Returns:
+#         the curried or unchanged type
+#     """
+#     if isinstance(t, TypeOperator) and t.name == "->" and len(t.types) > 2:
+#             return Function(t.types[0], Function(t.types[1:]))
+#     else:
+#         return t
 
 
 def uncurry_type(t):

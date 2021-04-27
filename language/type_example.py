@@ -6,7 +6,7 @@ Based on an implementation by Robert Smallshire
 https://github.com/rob-smallshire/hindley-milner-python
 """
 
-from language.ast import Identifier, Apply, Lambda, Let, Letrec, MultiLambda
+from language.ast import Identifier, Apply, Lambda, Let, Letrec
 from language.types import *
 from language.type_inference import analyse, lookup
 from language.util import InferenceError, ParseError
@@ -29,7 +29,7 @@ my_env = {"pair": Function(var1, Function(var2, pair_type)),
           "times": Function(Integer, Function(Integer, Integer)),
           "plus": Function(Integer, Function(Integer, Integer)),
           "HOLE": HOLE,
-          "multi_plus": MultiFunction([Integer, Integer, Integer])}
+          "multi_plus": Function(Integer, Integer, Integer)}
 
 pair = Apply(Apply(Identifier("pair"),
                    Apply(Identifier("f"),
@@ -213,7 +213,7 @@ def test_multi_lambda():
         Identifier("multi_plus"),
         Apply(Identifier("multi_plus"), Identifier("1")),
         Apply(Identifier("multi_plus"), Identifier("1"), Identifier("1")),
-        MultiLambda(["x", "y"],
+        Lambda(["x", "y"],
                         Apply(
                           Apply(Identifier("plus"), Identifier("x")),
                           Identifier("y")))
@@ -258,6 +258,6 @@ def run_examples():
 
 
 if __name__ == '__main__':
-    # run_examples()
-    # test_holes()
+    run_examples()
+    test_holes()
     test_multi_lambda()

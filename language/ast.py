@@ -31,22 +31,14 @@ class Lambda(object):
     """Lambda abstraction"""
 
     def __init__(self, v, body):
-        self.v = v
+        self.v = v  # variable name(s) can be either str, or list of str
         self.body = body
 
     def __str__(self):
-        return f"(fn {self.v} => {self.body})"
-
-
-class MultiLambda(object):
-    """Lambda with multiple args"""
-
-    def __init__(self, vs, body):
-        self.vs = vs
-        self.body = body
-
-    def __str__(self):
-        return f"(fn {', '.join(str(v) for v in self.vs)} => {self.body})"
+        if isinstance(self.v, str):
+            return f"(fn {self.v} => {self.body})"
+        else:
+            return f"(fn {', '.join(str(i) for i in self.v)} => {self.body})"
 
 
 class Let(object):

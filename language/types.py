@@ -75,13 +75,6 @@ class Function(TypeOperator):
         super(Function, self).__init__("->", types)
 
 
-class MultiFunction(TypeOperator):
-    """An n-ary type constructor which builds function types"""
-
-    def __init__(self, types):
-        super(MultiFunction, self).__init__("->", types)
-
-
 def curried_type(*types):
     """Syntactic sugar for creating a curried function with multiple args"""
     if len(types) > 2:

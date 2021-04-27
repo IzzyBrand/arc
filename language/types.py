@@ -71,8 +71,8 @@ class TypeOperator(object):
 class Function(TypeOperator):
     """A binary type constructor which builds function types"""
 
-    def __init__(self, from_type, to_type):
-        super(Function, self).__init__("->", [from_type, to_type])
+    def __init__(self, *types):
+        super(Function, self).__init__("->", types)
 
 
 class MultiFunction(TypeOperator):

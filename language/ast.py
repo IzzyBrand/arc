@@ -19,12 +19,13 @@ class Identifier(object):
 class Apply(object):
     """Function application"""
 
-    def __init__(self, fn, arg):
+    def __init__(self, fn, *args):
         self.fn = fn
-        self.arg = arg
+        self.args = args
 
     def __str__(self):
-        return f"({self.fn} {self.arg})"
+        return f"({self.fn} {' '.join([str(a) for a in self.args])})"
+
 
 class Lambda(object):
     """Lambda abstraction"""

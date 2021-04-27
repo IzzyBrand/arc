@@ -207,9 +207,12 @@ def test_holes():
 
 def test_multi_lambda():
     multi_examples = [
+        Identifier("plus"),
+        Apply(Identifier("plus"), Identifier("1")),
+        Apply(Identifier("plus"), Identifier("1"), Identifier("1")),
         Identifier("multi_plus"),
         Apply(Identifier("multi_plus"), Identifier("1")),
-        Apply(Apply(Identifier("multi_plus"), Identifier("1")), Identifier("1")),
+        Apply(Identifier("multi_plus"), Identifier("1"), Identifier("1")),
         MultiLambda(["x", "y"],
                         Apply(
                           Apply(Identifier("plus"), Identifier("x")),
